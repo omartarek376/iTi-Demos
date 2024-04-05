@@ -1,9 +1,8 @@
-#include "HAL/LED.h"
-#include "MCAL/RCC.h"
 #include "MCAL/USART.h"
 #include "MCAL/GPIO.h"
-#include "MCAL/NVIC.h"
-#include "MCAL/STM32F401CC_NVIC.h"
+#include "MCAL/SYSTICK.h"
+#include "HAL/Switch.h"
+
 
 
 USART_RXBuffer rx_buff = 
@@ -42,10 +41,10 @@ void recieve_callback(void)
 
 int main()
 {
-	RCC_Enable_AHB1_Peripheral(AHB1_GPIOC_ENABLE,STATE_ON);
-	RCC_Enable_AHB1_Peripheral(AHB1_GPIOA_ENABLE,STATE_ON);
-	RCC_Enable_APB2_Peripheral(APB2_USART1_ENABLE,STATE_ON);
-	NVIC_EnableIRQ(IRQ_USART1_INTERRUPT);
+	// RCC_Enable_AHB1_Peripheral(AHB1_GPIOC_ENABLE,STATE_ON);
+	// RCC_Enable_AHB1_Peripheral(AHB1_GPIOA_ENABLE,STATE_ON);
+	// RCC_Enable_APB2_Peripheral(APB2_USART1_ENABLE,STATE_ON);
+	// NVIC_EnableIRQ(IRQ_USART1_INTERRUPT);
 	
 
 	USART_Config usart_config = {
@@ -82,7 +81,6 @@ int main()
 
 	GPIO_InitPin(&TX_PIN);
 	GPIO_InitPin(&RX_PIN);
-	led_init();
 	USART_Init(&usart_config);
 	USART_ReceiveBuffer(&rx_buff);
 	USART_RegisterCallBackFunction(USART1,RECEIVE,recieve_callback);

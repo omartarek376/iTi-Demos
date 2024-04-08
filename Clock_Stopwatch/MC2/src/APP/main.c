@@ -1,96 +1,84 @@
-#include "HAL/LED.h"
-#include "MCAL/RCC.h"
-#include "MCAL/USART.h"
-#include "MCAL/GPIO.h"
-#include "MCAL/NVIC.h"
-#include "MCAL/STM32F401CC_NVIC.h"
+#include "MCAL/MRCC/MRCC_interface.h"
+#include "MCAL/MGPIO/MGPIO_interface.h"
+#include "HAL/HLED/HLED_interface.h"
+#include "HAL/HSWITCH/HSWITCH_interface.h"
+#include "MCAL/MSYSTICK/MSYSTICK_interface.h"
+#include "SERVICES/SCHED/SCHED_interface.h"
+#include "HAL/HLCD/HLCD_interface.h"
+#include "MCAL/MUSART/MUSART_interface.h"
+#include "MCAL/MNVIC/MNVIC_interface.h"
 
+u8 data[6] ="Shaher";
+u16 length = sizeof(data);  // Exclude the null terminator
 
-USART_RXBuffer rx_buff = 
+     void transmissionCompleteCallback(void) 
+    {
+       //HLED_vSetLedStatus(Led_Start, LED_STATUS_ON);
+       HLED_vToggle(Led_Start);
+    }
+   void receiveCallback()
 {
-	.Channel = USART1,
-	.Data = NULL,
-	.Size = 1,
-	.Index = 0
-};
-
-USART_TXBuffer tx_buff = 
-{
-	.Channel = USART1,
-	.Data = "Hello darkness my old friend",
-	.Size = 28
-};
-
-USART_TXBuffer tx_buff2 = 
-{
-	.Channel = USART1,
-	.Data = "Bye my love",
-	.Size = 11
-};
-
-void recieve_callback(void)
-{
-	if (rx_buff.Data == 'y')
-		{
-			USART_SendBufferZeroCopy(&tx_buff);
-		}
-		else if (rx_buff.Data == 'n')
-		{
-			USART_SendBufferZeroCopy(&tx_buff2);
-		}
+   MUSART_enuSendBufferAsync(USART_1, data, length ,transmissionCompleteCallback);
+   // if(data == "mina")
+   //    {
+   //       HLED_vSetLedStatus(Led_Start, LED_STATUS_ON);
+   //    }
+   //    else
+   //    {
+   //       HLED_vSetLedStatus(Led_Start, LED_STATUS_OFF);
+   //    }
 }
+int main(void)
+{ 
+  RCC_enuEnableAHB1Peripheral(AHB1_GPIOA);
+  RCC_enuEnableAHB1Peripheral(AHB1_GPIOB);
+  RCC_enuEnableAHB1Peripheral(AHB1_GPIOC);
+  RCC_enuEnableAPB2Peripheral(APB2_USART1);
 
-int main()
-{
-	RCC_Enable_AHB1_Peripheral(AHB1_GPIOC_ENABLE,STATE_ON);
-	RCC_Enable_AHB1_Peripheral(AHB1_GPIOA_ENABLE,STATE_ON);
-	RCC_Enable_APB2_Peripheral(APB2_USART1_ENABLE,STATE_ON);
-	NVIC_EnableIRQ(IRQ_USART1_INTERRUPT);
-	
+  MGPIO_PIN_config_t USART_Tx_Pin_Config = {
+    .GPIOPort = GPIO_PORTB,                        // Assuming USART Tx pin is connected to GPIO Port A
+    .GPIOPin = GPIO_PIN6,                          // Assuming USART Tx pin is connected to pin 9
+    .GPIOMode = GPIO_AF,                           // Alternative function mode
+    .GPIO_OUTPUTTYPE = GPIO_PUSHPULL,              // Push-pull output type
+    .GPIO_INPUTTYPE = GPIO_NO_PULLUPPULLDOWN,      // No pull-up/pull-down
+    .GPIOSpeed = GPIO_HIGH_SPEED,                  // High speed
+    .GPIOAlternative = GPIO_AF_USART_1_2           // USART alternative function
+};
 
-	USART_Config usart_config = {
-        .Channel = USART1,
-        .Oversampling = OVERSAMPLING_8,
-        .USART_Enable = ENABLE,
-        .WordLength = WORDLENGTH_8,
-        .ParityControl = PARITY_NONE,
-        .TransComplete_Int = ENABLE,
-        .TransEnable = ENABLE,
-		.ReceiveEnable = ENABLE,
-		.ReceiveDateRegisterEmpty_Int = ENABLE,
-        .BaudRate = 9600
-    };
-
-	GPIO_CONFIG_T TX_PIN = 
-	{
-		.Mode = GPIO_MODE_AF_PP,
-		.Speed = GPIO_SPEED_HIGH,
-		.Port = GPIO_PORT_A,
-		.Pin = GPIO_PIN_9,
-		.Alternative = GPIO_ALTERNATIVE_USART1_2
-	};
-
-	GPIO_CONFIG_T RX_PIN = 
-	{
-		.Mode = GPIO_MODE_AF_PP_PU,
-		.Speed = GPIO_SPEED_HIGH,
-		.Port = GPIO_PORT_A,
-		.Pin = GPIO_PIN_10,
-		.Alternative = GPIO_ALTERNATIVE_USART1_2
-	};
+MGPIO_PIN_config_t USART_Rx_Pin_Config = {
+    .GPIOPort = GPIO_PORTB,             // Assuming USART Rx pin is connected to GPIO Port A
+    .GPIOPin = GPIO_PIN7,              // Assuming USART Rx pin is connected to pin 10
+    .GPIOMode = GPIO_AF,                // Alternative function mode
+    .GPIO_OUTPUTTYPE = GPIO_PUSHPULL,   // Push-pull output type
+    .GPIO_INPUTTYPE = GPIO_NO_PULLUPPULLDOWN,  // No pull-up/pull-down
+    .GPIOSpeed = GPIO_HIGH_SPEED,       // High speed
+    .GPIOAlternative = GPIO_AF_USART_1_2  // USART alternative function
+};
+MGPIO_enuSetPinConfig(&USART_Tx_Pin_Config);
+MGPIO_enuSetPinConfig(&USART_Rx_Pin_Config);
 
 
-	GPIO_InitPin(&TX_PIN);
-	GPIO_InitPin(&RX_PIN);
-	led_init();
-	USART_Init(&usart_config);
-	USART_ReceiveBuffer(&rx_buff);
-	USART_RegisterCallBackFunction(USART1,RECEIVE,recieve_callback);
+   HLED_vLedInit();
+   //HLCD_vidPinInit();
+   //HLCD_voidLCDInitASYNCH();
+   //HSWITCH_vSwitchInit();
+   //SCHED_INIT();
+   //SCHED_START();
+    
+     MUSART_enuInit();
+     NVIC_EnableIRQ(IRQ_USART1);
 
-	while (1)
-	{
-	}
-	
+     MUSART_enuSendBufferAsync(USART_1, data, length,transmissionCompleteCallback);
+     // MUSART_enuRecieveBufferAsync(USART_1, data, length, receiveCallback);
+    
+   // MUSART_enuSendByteSync(USART_1,'M');
+   
+
+  while (1)
+    { 
+    // MUSART_enuRecieveBufferAsync(USART_1, data, length, receiveCallback);
+  
+    }
+    return 0 ;
 }
-
 

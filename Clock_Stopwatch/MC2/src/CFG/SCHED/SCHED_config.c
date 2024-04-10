@@ -26,6 +26,9 @@ extern void Runnable_APP1 (void);
 extern void switchesCheck (void);
 extern void RUNNABLE_LCD(void);
 extern void SW_Runnable(void);
+extern void clockRunnable(void);
+extern void StopwatchRunnable(void);
+
 
 
 
@@ -72,9 +75,21 @@ const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 							.callBackFn = SW_Runnable
 	},
 
-	[Switch_check]= { .name = "Switch Check",
-							.periodicityMS =20,
+	// [Switch_check]= { .name = "Switch Check",
+	// 						.periodicityMS =20,
+	// 						.firstDelay=50,
+	// 						.callBackFn = switchesCheck
+	// },
+	[Clock_Runnable]= { .name = "Clock_Runnable",
+							.periodicityMS =200,
 							.firstDelay=50,
-							.callBackFn = switchesCheck
-	}
+							.callBackFn = clockRunnable
+	},
+
+	// [Stopwatch_Runnable]= { .name = "Stopwatch_Runnable",
+	// 						.periodicityMS =100,
+	// 						.firstDelay=50,
+	// 						.callBackFn = StopwatchRunnable
+	// }
+
 };

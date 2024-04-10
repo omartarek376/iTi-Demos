@@ -862,23 +862,22 @@ static void LCD_writeNumProc(void) {
 
 	/* Its usage is to check if the unit digit in the input number is zero or not */
 	static u8 LOC_uint8ZeroInUnitsChecker = 0;
-	
+
 	/* Its usage is to check if the input number is zero */
-	static u8 LOC_uint8NumberIsZeroFlag = 0;
+	static u8 LOC_uint8NumberIsZeroFlag = 0xFF;
 
-	/* Its usage is to check if the input number is not zero */
-	static u8 LOC_uint8NumberIsNotZeroFlag = 0;
 
-	/* Its usage is to check if the input number is zero whether We finished printing it or not */
-	static u8 LOC_uint8ZeroIsPrintedFlag = 0;
-
-	/* Check if the input is zero */
-	if((userReq.number == 0) && (LOC_uint8NumberIsZeroFlag == 0) && (LOC_uint8NumberIsNotZeroFlag != 1)) {
+	if (userReq.number == 0 && LOC_uint8NumberIsZeroFlag == 0xFF)
+	{
 		LOC_uint8NumberIsZeroFlag = 1;
 	}
+	else if (userReq.number != 0)
+	{
+		LOC_uint8NumberIsZeroFlag = 2;
+	}
 
-	if (LOC_uint8NumberIsZeroFlag == 1 && LOC_uint8ZeroIsPrintedFlag == 0) {
-		/* Check if the input is zero, print it directly */
+	if (LOC_uint8NumberIsZeroFlag == 1)
+	{
 
 		/* Check if We finished all stages of the LCD_writeDataSM or not */
 		if(writeDataSM_remainingStages > 0) {
@@ -888,11 +887,9 @@ static void LCD_writeNumProc(void) {
 		else{
 			/* We finished the printing of one digit */
 			writeDataSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
-			LOC_uint8ZeroIsPrintedFlag = 1;
+			LOC_uint8NumberIsZeroFlag = 0;
 		}
-	} else if (userReq.number != 0) {
-
-		LOC_uint8NumberIsNotZeroFlag = 1;
+	} else if (userReq.number != 0 && LOC_uint8NumberIsZeroFlag == 2) {
 
 		/* Save an inverted image of the input in a local variable to b able to print it properly */
 		LOC_uint64InvertedImage *= 10;
@@ -905,7 +902,7 @@ static void LCD_writeNumProc(void) {
 
 		userReq.number /= 10;
 
-	} else if (LOC_uint64InvertedImage != 0) {
+	} else if (LOC_uint64InvertedImage != 0 && LOC_uint8NumberIsZeroFlag == 2) {
 		/* Send the inverted number to be printed digit-by-digit */
 
 		/* Check if We finished all stages of the LCD_writeDataSM or not */
@@ -934,12 +931,10 @@ static void LCD_writeNumProc(void) {
 		}
 	} else {
 		/* We finished the Printing of the Whole number */
-		if (LOC_uint8NumberIsZeroFlag == 1) {
-			LOC_uint8NumberIsZeroFlag = 0;
+		if (LOC_uint8NumberIsZeroFlag != 0xFF) {
+			LOC_uint8NumberIsZeroFlag = 0xFF;
 		}
-		if (LOC_uint8ZeroIsPrintedFlag == 1) {
-			LOC_uint8ZeroIsPrintedFlag = 0;
-		}
+
 		userReq.type = reqNULL;
 		userReq.state = readyForRequest;
 		writeNumProc.callBack();
@@ -955,23 +950,22 @@ static void LCD_writeNumProc(void) {
 
 	/* Its usage is to check if the unit digit in the input number is zero or not */
 	static u8 LOC_uint8ZeroInUnitsChecker = 0;
-	
+
 	/* Its usage is to check if the input number is zero */
-	static u8 LOC_uint8NumberIsZeroFlag = 0;
+	static u8 LOC_uint8NumberIsZeroFlag = 0xFF;
 
-	/* Its usage is to check if the input number is not zero */
-	static u8 LOC_uint8NumberIsNotZeroFlag = 0;
 
-	/* Its usage is to check if the input number is zero whether We finished printing it or not */
-	static u8 LOC_uint8ZeroIsPrintedFlag = 0;
-
-	/* Check if the input is zero */
-	if((userReq.number == 0) && (LOC_uint8NumberIsZeroFlag == 0)) {
+	if (userReq.number == 0 && LOC_uint8NumberIsZeroFlag == 0xFF)
+	{
 		LOC_uint8NumberIsZeroFlag = 1;
 	}
+	else if (userReq.number != 0)
+	{
+		LOC_uint8NumberIsZeroFlag = 2;
+	}
 
-	if (LOC_uint8NumberIsZeroFlag == 1 && LOC_uint8ZeroIsPrintedFlag == 0) {
-		/* Check if the input is zero, print it directly */
+	if (LOC_uint8NumberIsZeroFlag == 1)
+	{
 
 		/* Check if We finished all stages of the LCD_writeDataSM or not */
 		if(writeDataSM_remainingStages > 0) {
@@ -981,9 +975,10 @@ static void LCD_writeNumProc(void) {
 		else{
 			/* We finished the printing of one digit */
 			writeDataSM_remainingStages = REMAINING_STAGES_8_BIT_MODE_CASE;
-			LOC_uint8ZeroIsPrintedFlag = 1;
+			LOC_uint8NumberIsZeroFlag = 0;
 		}
-	} else if (userReq.number != 0) {
+	} else if (userReq.number != 0 && LOC_uint8NumberIsZeroFlag == 2) {
+
 		/* Save an inverted image of the input in a local variable to b able to print it properly */
 		LOC_uint64InvertedImage *= 10;
 		LOC_uint64InvertedImage += userReq.number % 10;
@@ -995,7 +990,7 @@ static void LCD_writeNumProc(void) {
 
 		userReq.number /= 10;
 
-	} else if (LOC_uint64InvertedImage != 0) {
+	} else if (LOC_uint64InvertedImage != 0 && LOC_uint8NumberIsZeroFlag == 2) {
 		/* Send the inverted number to be printed digit-by-digit */
 
 		/* Check if We finished all stages of the LCD_writeDataSM or not */
@@ -1024,12 +1019,10 @@ static void LCD_writeNumProc(void) {
 		}
 	} else {
 		/* We finished the Printing of the Whole number */
-		if (LOC_uint8NumberIsZeroFlag == 1) {
-			LOC_uint8NumberIsZeroFlag = 0;
+		if (LOC_uint8NumberIsZeroFlag != 0xFF) {
+			LOC_uint8NumberIsZeroFlag = 0xFF;
 		}
-		if (LOC_uint8ZeroIsPrintedFlag == 1) {
-			LOC_uint8ZeroIsPrintedFlag = 0;
-		}
+
 		userReq.type = reqNULL;
 		userReq.state = readyForRequest;
 		writeNumProc.callBack();

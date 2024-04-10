@@ -81,7 +81,7 @@ const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 	// 						.callBackFn = switchesCheck
 	// },
 	[Clock_Runnable]= { .name = "Clock_Runnable",
-							.periodicityMS =200,
+							.periodicityMS =100,
 							.firstDelay=50,
 							.callBackFn = clockRunnable
 	},

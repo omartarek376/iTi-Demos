@@ -126,7 +126,6 @@ static u8 printEntireScreen = TRUE;
 static u8 dayPassed = FALSE ;
 
 
-
 /************************************************************************************/
 /*							Static Functions' Implementation						*/
 /************************************************************************************/
@@ -200,11 +199,11 @@ void clockRunnable(void)
 	u8 RecivedMessage  = 0;
 
 	/* Variables related to the date and time. Initially We are setting them as follows */
-	static u8 hours   = 12;
-	static u8 minutes = 0;
-	static u8 seconds = 0;
-	static u8 day = 1;
-	static u8 month = 1;
+	static u8 hours   = 0;
+	static u8 minutes = 26;
+	static u8 seconds = 50;
+	static u8 day = 11;
+	static u8 month = 4;
 	static u16 year = 2024;
 
 	/************************************************************************************/
@@ -234,18 +233,18 @@ void clockRunnable(void)
 			}
 			
 			/* If a total month passed increment the month digits and reset the days digits to one */
-			if((month == 1 ||month == 3 ||month == 5 ||month == 7 ||month == 8 ||month == 10 ||month == 12) \
-					&& (day == 31))
+			if((month == 1 ||month == 3 ||month == 5 ||month == 7 ||month == 8 ||month == 10 || month == 12) \
+					&& (day == 32))
 			{
 				day = 1;
 				month++;
 			}
-			else if ((month == 4 ||month == 6 ||month == 9 ||month == 11) && (day == 30))
+			else if ((month == 4 ||month == 6 ||month == 9 ||month == 11) && (day == 31))
 			{
 				day = 1;
 				month++;
 			}
-			else if ((month == 2) && (day == 28))
+			else if ((month == 2) && (day == 29))
 			{
 				day = 1;
 				month++;
@@ -541,6 +540,7 @@ void clockRunnable(void)
 				{
 					
 				}
+				dayPassed = FALSE ;
 					
 				}
 				else
@@ -555,6 +555,7 @@ void clockRunnable(void)
 					}
 				}
 				printCounter = 0;
+
 				break;
 			}
 		}

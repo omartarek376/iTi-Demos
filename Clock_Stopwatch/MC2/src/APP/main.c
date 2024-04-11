@@ -19,8 +19,6 @@ int main(void)
   RCC_enuEnableAHB1Peripheral(AHB1_GPIOB);
   RCC_enuEnableAHB1Peripheral(AHB1_GPIOC);
   RCC_enuEnableAPB2Peripheral(APB2_USART1);
- // HLED_vSetLedStatus (Led_Start,LED_STATUS_ON);
-  //MGPIO_enuSetPinValue(GPIO_PORTA,GPIO_PIN7,GPIO_HIGH);
 
   MGPIO_PIN_config_t USART_Tx_Pin_Config = {
     .GPIOPort = GPIO_PORTB,                        // Assuming USART Tx pin is connected to GPIO Port A
@@ -47,12 +45,11 @@ NVIC_EnableIRQ(IRQ_USART1);
    
    MUSART_enuInit();
    HLED_vLedInit();
-  // MGPIO_enuSetPinValue(GPIO_PORTA,GPIO_PIN7,GPIO_HIGH);
    LCD_enuInitAsync(DummyCB);
    HSWITCH_vSwitchInit();
    SCHED_init();
    SCHED_start();   
- // HLED_vSetLedStatus (Led_Start,LED_STATUS_ON);
+
  
    
     return 0 ;

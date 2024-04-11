@@ -60,34 +60,34 @@ extern void StopwatchRunnable(void);
 
 const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 	[toggleTheLED] 		= { .name = "Toggle LED each second",
-							.periodicityMS = 1000,
+							.periodicityMS = 500,
 							.firstDelay = 0,
 							.callBackFn = Runnable_APP1 
 	},
-	[lcdRunnable] 		= { .name = "LCD module",
-							.periodicityMS = 1,
-							.firstDelay=0,
-							.callBackFn = RUNNABLE_LCD
-	},
+	// [lcdRunnable] 		= { .name = "LCD module",
+	// 						.periodicityMS = 1,
+	// 						.firstDelay=0,
+	// 						.callBackFn = RUNNABLE_LCD
+	// },
 	[Switch_Debounce] 		= { .name = "Switch_Debounce",
 							.periodicityMS = 30,
 							.firstDelay=50,
 							.callBackFn = SW_Runnable
 	},
 
-	// [Switch_check]= { .name = "Switch Check",
-	// 						.periodicityMS =20,
-	// 						.firstDelay=50,
-	// 						.callBackFn = switchesCheck
-	// },
-	[Clock_Runnable]= { .name = "Clock_Runnable",
-							.periodicityMS =100,
-							.firstDelay=50,
-							.callBackFn = clockRunnable
+	[Switch_check]= { .name = "Switch Check",
+							.periodicityMS =200,
+							.firstDelay=2000,
+							.callBackFn = switchesCheck
 	},
+	// [Clock_Runnable]= { .name = "Clock_Runnable",
+	// 						.periodicityMS =100,
+	// 						.firstDelay=50,
+	// 						.callBackFn = clockRunnable
+	// },
 
 	// [Stopwatch_Runnable]= { .name = "Stopwatch_Runnable",
-	// 						.periodicityMS =100,
+	// 						.periodicityMS = 20,
 	// 						.firstDelay=50,
 	// 						.callBackFn = StopwatchRunnable
 	// }

@@ -105,7 +105,9 @@ typedef enum
 /*								Variables's Declaration								*/
 /************************************************************************************/
 
-MODES Mode = CLOCK_MODE;
+MODES Mode = STOPWATCH_MODE;
+
+MODES previousMode = CLOCK_MODE;
 
 static EDITMODES EditMode = NOT_ACTIVATED;
 
@@ -124,6 +126,9 @@ static u8 requestHandled = TRUE;
 static u8 printEntireScreen = TRUE;
 
 static u8 dayPassed = FALSE ;
+
+
+
 
 
 /************************************************************************************/
@@ -266,12 +271,17 @@ void clockRunnable(void)
 	if( Mode == CLOCK_MODE && printEntireScreen == FALSE)
 		{   
 			switch(printCounter)
-			{
+			{   
+
 				case 0:
-				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_9,DummyCB); 
+				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_1,DummyCB); 
 				printCounter ++;
 				break;
 				case 1:
+				LCD_enuWriteStringAsync("Time:   ",DummyCB);
+				printCounter ++;
+				break;
+				case 2:
 				if (hours < 10)
 				{
 					LCD_enuWriteStringAsync("0",DummyCB);
@@ -282,7 +292,7 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-			case 2:
+			case 3:
 				if(hours < 10)
 				{
 					LCD_enuWriteNumberAsync(hours,DummyCB);
@@ -293,11 +303,11 @@ void clockRunnable(void)
 				}
 				printCounter ++ ;
 				break;
-				case 3:
+				case 4:
 				LCD_enuWriteStringAsync(":",DummyCB);
 				printCounter ++;
 				break;
-				case 4:
+				case 5:
 				if (minutes < 10)
 				{
 					LCD_enuWriteStringAsync("0",DummyCB);
@@ -308,7 +318,7 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-			case 5:
+			case 6:
 				if(minutes < 10)
 				{
 					LCD_enuWriteNumberAsync(minutes,DummyCB);
@@ -319,11 +329,11 @@ void clockRunnable(void)
 				}
 				printCounter ++ ;
 				break;
-				case 6:
+				case 7:
 				LCD_enuWriteStringAsync(":",DummyCB);
 				printCounter ++;
 				break;
-				case 7:
+				case 8:
 				if (seconds < 10)
 				{
 					LCD_enuWriteStringAsync("0",DummyCB);
@@ -334,7 +344,7 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-				case 8:
+				case 9:
 				if(seconds < 10)
 				{
 					LCD_enuWriteNumberAsync(seconds,DummyCB);
@@ -345,10 +355,18 @@ void clockRunnable(void)
 				}
 				printCounter ++ ;
 				break;
-				case 9:
-				if (dayPassed == TRUE)
+				case 10:
+				LCD_enuSetCursorAsync(LCD_enuFirstRow,LCD_enuColumn_1,DummyCB); 
+				printCounter ++;
+				break;
+				case 11:
+				LCD_enuWriteStringAsync("Date: ",DummyCB);
+				printCounter ++;
+				break;
+				case 12:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE )
 				{
-					LCD_enuSetCursorAsync(LCD_enuFirstRow,LCD_enuColumn_7,DummyCB); 
+				
 				}
 				else
 				{
@@ -356,8 +374,8 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-				case 10:
-				if (dayPassed == TRUE)
+				case 13:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
 				{  
 					if(day < 10)
 					{
@@ -381,8 +399,8 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-				case 11:
-				if (dayPassed == TRUE)
+				case 14:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
 				{  
 					if(day < 10)
 					{
@@ -407,8 +425,8 @@ void clockRunnable(void)
 				printCounter ++;
 				break;
 
-				case 12:
-				if (dayPassed == TRUE)
+				case 15:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
 				{
 					LCD_enuWriteStringAsync("/",DummyCB);
 				}
@@ -418,8 +436,8 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-				case 13:
-				if (dayPassed == TRUE)
+				case 16:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
 				{  
 					if(month < 10)
 					{
@@ -443,8 +461,8 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-				case 14:
-				if (dayPassed == TRUE)
+				case 17:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
 				{  
 					if(month < 10)
 					{
@@ -468,8 +486,8 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-				case 15:
-				if (dayPassed == TRUE)
+				case 18:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
 				{
 					LCD_enuWriteStringAsync("/",DummyCB);
 				}
@@ -480,8 +498,8 @@ void clockRunnable(void)
 				printCounter ++;
 				break;
 
-				case 16:
-				if (dayPassed == TRUE)
+				case 19:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
 				{  
 					if (year < 1000)
 				{
@@ -517,8 +535,8 @@ void clockRunnable(void)
 				}
 				printCounter ++;
 				break;
-				case 17:
-				if (dayPassed == TRUE)
+				case 20:
+				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
 				{  
 					if (year < 1000)
 				{
@@ -1213,10 +1231,12 @@ void clockRunnable(void)
 						if (Mode == CLOCK_MODE)
 						{
 							Mode = STOPWATCH_MODE;
+							previousMode = CLOCK_MODE;
 						}
 						else if (Mode == STOPWATCH_MODE)
 						{
 							Mode = CLOCK_MODE;
+							previousMode = STOPWATCH_MODE;
 						}
 					}
 					break;

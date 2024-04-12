@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------------------------------*/
 /*                                           Includes:                                               */
 /*---------------------------------------------------------------------------------------------------*/
-#include <MCAL/SYSTICK/SYSTICK.h>
-#include <Service/SCHEDULER/RUNNABLE.h>
-#include <Service/SCHEDULER/SCHED.h>
+#include <MCAL/SYSTICK.h>
+#include <Service/RUNNABLE.h>
+#include <Service/SCHED.h>
 
 /*---------------------------------------------------------------------------------------------------*/
 /*                                           Typedefs:                                               */

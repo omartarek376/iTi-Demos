@@ -18,9 +18,9 @@
 #include "stdint.h"
 
 /* ِIncluding the .h file that contains all configurations */
-#include "HAL/LCD/LCD.h"
-#include "HAL/LCD/LCD_CNF.h"
-#include <MCAL/GPIO/GPIO.h>
+#include "HAL/LCD.h"
+#include "CFG/LCD_CNF.h"
+#include "MCAL/GPIO.h"
 
 /********************************************************************************************/
 /*									LCD Pins Configuration									*/
@@ -95,25 +95,25 @@ LCD_strLCDPinConfig_t arrayofLCDPinConfig [11] = {
 LCD_strLCDPinConfig_t arrayofLCDPinConfig [7] = {
 	/* Write the port and the pin that the D4 pin is connected to */
 	[D4_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_A,
-							.LCD_pin_number = GPIO_PIN_3	},
+							.LCD_pin_number = GPIO_PIN_0	},
 	/* Write the port and the pin that the D5 pin is connected to */
 	[D5_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_A,
-							.LCD_pin_number = GPIO_PIN_4	},
+							.LCD_pin_number = GPIO_PIN_1	},
 	/* Write the port and the pin that the D6 pin is connected to */
 	[D6_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_A,
-							.LCD_pin_number = GPIO_PIN_5	},
+							.LCD_pin_number = GPIO_PIN_2	},
 	/* Write the port and the pin that the D7 pin is connected to */
 	[D7_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_A,
-							.LCD_pin_number = GPIO_PIN_6	},
+							.LCD_pin_number = GPIO_PIN_3	},
 	/* Write the port and the pin that the Register Select (RS) pin is connected to */
-	[RS_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_B,
-							.LCD_pin_number = GPIO_PIN_7	},
+	[RS_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_A,
+							.LCD_pin_number = GPIO_PIN_4	},
 	/* Write the port and the pin that the Read/Write (R/w) pin is connected to */
-	[RW_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_B,
-							.LCD_pin_number = GPIO_PIN_8	},
+	[RW_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_A,
+							.LCD_pin_number = GPIO_PIN_5	},
 	/* Write the port and the pin that the Enable (E) pin is connected to */
-	[E_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_B,
-						.LCD_pin_number = GPIO_PIN_9	}
+	[E_4BITMODE] = 	{ 	.LCD_port_number = GPIO_PORT_A,
+						.LCD_pin_number = GPIO_PIN_6	}
 };
 
 #endif /* #if (LCD_DATA_BITS_MODE == LCD_EIGHT_BITS_MODE) */

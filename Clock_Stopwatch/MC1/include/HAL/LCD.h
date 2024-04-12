@@ -28,7 +28,7 @@
 #include "stdint.h"
 
 /* ِIncluding the .h file that contains all configurations */
-#include "HAL/LCD/LCD_CNF.h"
+#include "CFG/LCD_CNF.h"
 
 
 /************************************************************************************/

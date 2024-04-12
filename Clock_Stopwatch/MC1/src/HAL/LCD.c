@@ -21,10 +21,10 @@
 /************************************************************************************/
 
 
-#include <MCAL/RCC/RCC.h>
-#include "MCAL/GPIO/GPIO.h"
-#include "HAL/LCD/LCD.h"
-#include "LIB/ErrorStatus.h"
+#include "MCAL/RCC.h"
+#include "MCAL/GPIO.h"
+#include "HAL/LCD.h"
+#include "ErrorStatus.h"
 
 
 
@@ -556,7 +556,7 @@ static void LCD_initProcSM(void){
 		/* Turn the display ON, turn the cursor ON, and turn the blinking on */
 
 		if (writeCommandSM_remainingStages > 0){
-			LCD_writeCommandSM(LCD_DisplayON_CursorON_BlinkON);
+			LCD_writeCommandSM(LCD_DisplayON_CursorOFF_BlinkOFF);
 			writeCommandSM_remainingStages--;
 		}
 		else{

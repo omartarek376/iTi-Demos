@@ -1,11 +1,13 @@
-#include <Service/SCHEDULER/RUNNABLE.h>
-#include <Service/SCHEDULER/SCHED.h>
+#include <Service/RUNNABLE.h>
+#include <Service/SCHED.h>
 /*---------------------------------------------------------------------------------------------------*/
 /*                                           Extern Prototypes                                       */
 /*---------------------------------------------------------------------------------------------------*/
 
 extern void RUNNABLE_LCD(void);
-extern void LCD_Write();
+extern void Clock_RunnerTask(void);
+extern void Stopwatch_RunnerTask(void);
+extern void Switch_runnable(void);
 
 
 
@@ -14,36 +16,31 @@ extern void LCD_Write();
 /*---------------------------------------------------------------------------------------------------*/
 Runnable_t Runnables_Arr [_RunnableNumber]=
 {
-    /**
-     * [Name]=
-     * {    .Name = 
-     *      .Periodicity= 
-     *      .DelayMs =
-     *      .CB = 
-     * }
-     */
-
-    /*[BlinkingLed_Runnable2]=
-    {
-        .Name = "Blinking Led 2",
-        .Periodicity = 1000,
-        .CB = &BlinkingLed2,
-        .DelayMs = 1500,
-    },*/
-
     [LCD_RUNNABLE]=
     {
         .Name = "Lcd_runnable",
         .Periodicity = 1,
-        .CB = &RUNNABLE_LCD
+        .CB = &RUNNABLE_LCD,
     },
-
-   [LCD_Writing_runnable]=
+    [Clock_Runner]=
     {
-        .Name = "write",
-        .Periodicity = 10,
-        .DelayMs = 1000,
-        .CB = &LCD_Write
+        .Name = "Clock_runnable",
+        .Periodicity = 100,
+        .CB = &Clock_RunnerTask,
+        .DelayMs = 900
     },
-
+    [Stopwatch_Runner]=
+    {
+        .Name = "Stopwatch_runnable",
+        .Periodicity = 100,
+        .CB = &Stopwatch_RunnerTask,
+        .DelayMs = 1165
+    },
+    [Switch_Runner]=
+    {
+        .Name = "Switch_runnable",
+        .Periodicity = 100,
+        .CB = &Switch_runnable,
+        .DelayMs = 1020
+    }
 };

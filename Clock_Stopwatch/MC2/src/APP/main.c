@@ -16,7 +16,7 @@ u16 length = sizeof(data);  // Exclude the null terminator
        //HLED_vSetLedStatus(Led_Start, LED_STATUS_ON);
        HLED_vToggle(Led_Start);
     }
-   void receiveCallback()
+/*   void receiveCallback()
 {
    MUSART_enuSendBufferAsync(USART_1, data, length ,transmissionCompleteCallback);
    // if(data == "mina")
@@ -27,7 +27,7 @@ u16 length = sizeof(data);  // Exclude the null terminator
    //    {
    //       HLED_vSetLedStatus(Led_Start, LED_STATUS_OFF);
    //    }
-}
+}*/
 int main(void)
 { 
   RCC_enuEnableAHB1Peripheral(AHB1_GPIOA);
@@ -35,6 +35,7 @@ int main(void)
   RCC_enuEnableAHB1Peripheral(AHB1_GPIOC);
   RCC_enuEnableAPB2Peripheral(APB2_USART1);
 
+   LCD_enuInitAsync(NULL);
   MGPIO_PIN_config_t USART_Tx_Pin_Config = {
     .GPIOPort = GPIO_PORTB,                        // Assuming USART Tx pin is connected to GPIO Port A
     .GPIOPin = GPIO_PIN6,                          // Assuming USART Tx pin is connected to pin 9

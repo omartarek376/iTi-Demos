@@ -45,19 +45,19 @@ void HSWITCH_vSwitchInit(void)
     }
     
 }
-u32 HSWITCH_u32GetSwitchState(u32 Switch) {
+// u32 HSWITCH_u32GetSwitchState(u32 Switch) {
  
-    // Calculate the switch state based on the connection type
-    // For pull-up connections (SWITCH_CONN_PULLUP), the switch is considered pressed when the GPIO pin is low (0) and released when high (1).
-    // For pull-down connections (SWITCH_CONN_PULLDOWN), the switch is considered pressed when the GPIO pin is high (1) and released when low (0).
-    // XOR operation toggles the switch state if the connection is pull-down, effectively swapping the logic levels.
-    // Bitwise AND with 1 ensures that only the least significant bit is considered, masking any other bits.
-    //u8 switchState = ( GSW_STATE[Switch] ^ SWITCHES[Switch].Switch_Connection) & 1;
+//     // Calculate the switch state based on the connection type
+//     // For pull-up connections (SWITCH_CONN_PULLUP), the switch is considered pressed when the GPIO pin is low (0) and released when high (1).
+//     // For pull-down connections (SWITCH_CONN_PULLDOWN), the switch is considered pressed when the GPIO pin is high (1) and released when low (0).
+//     // XOR operation toggles the switch state if the connection is pull-down, effectively swapping the logic levels.
+//     // Bitwise AND with 1 ensures that only the least significant bit is considered, masking any other bits.
+//     //u8 switchState = ( GSW_STATE[Switch] ^ SWITCHES[Switch].Switch_Connection) & 1;
 
-    u8 Switch_State = ( GSW_STATE[Switch] ^ SWITCHES[Switch].Switch_Connection ) & 1;
+//     u8 Switch_State = ( GSW_STATE[Switch] ^ SWITCHES[Switch].Switch_Connection ) & 1;
 
-    return Switch_State ;
-}
+//     return Switch_State ;
+// }
 
 
 
@@ -112,6 +112,26 @@ void SW_Runnable(void)
     }
 }
 
+u32 HSWITCH_u32GetSwitchState(u32 Switch) {
+     u32 Switch_State = 0;
+    // Calculate the switch state based on the connection type
+    // For pull-up connections (SWITCH_CONN_PULLUP), the switch is considered pressed when the GPIO pin is low (0) and released when high (1).
+    // For pull-down connections (SWITCH_CONN_PULLDOWN), the switch is considered pressed when the GPIO pin is high (1) and released when low (0).
+    // XOR operation toggles the switch state if the connection is pull-down, effectively swapping the logic levels.
+    // Bitwise AND with 1 ensures that only the least significant bit is considered, masking any other bits.
+    //u8 switchState = ( GSW_STATE[Switch] ^ SWITCHES[Switch].Switch_Connection) & 1;
+    
+   if (SWITCHES[Switch].Switch_Connection == SWITCH_CONN_PULLUP) 
+   {
+         Switch_State = (GSW_STATE[Switch] ^ 1); 
+   } 
+    else if (SWITCHES[Switch].Switch_Connection == SWITCH_CONN_PULLDOWN)
+    {
+        Switch_State = (GSW_STATE[Switch] & 1);
+    }
+
+    return Switch_State ;
+}
 
 
 
@@ -128,15 +148,14 @@ void SW_Runnable(void)
     {
        Ret_enuSwitchErrorStatus = HSWITCH_enuInvalidSwitchNum;
     }
-       Ret_enuSwitchErrorStatus = MGPIO_getPinValue(SWITCHES[Copy_u8SwitchName].Switch_Port, SWITCHES[Copy_u8SwitchName].Switch_Pin, &LOC_SwitchState);
-
+      
         if (SWITCHES[Copy_u8SwitchName].Switch_Connection == SWITCH_CONN_PULLUP)
         {
-            if (LOC_SwitchState == GPIO_LOW)
+            if ( GSW_STATE[Copy_u8SwitchName] == GPIO_LOW)
             {
                 *Add_u8State = SWITCH_STATUS_PRESSED;
             }
-            else if (LOC_SwitchState == GPIO_HIGH)
+            else if (GSW_STATE[Copy_u8SwitchName] == GPIO_HIGH)
             {
                 *Add_u8State = SWITCH_STATUS_RELEASED;
             }
@@ -147,11 +166,11 @@ void SW_Runnable(void)
         }
         else if (SWITCHES[Copy_u8SwitchName].Switch_Connection == SWITCH_CONN_PULLDOWN)
         {
-            if (LOC_SwitchState == GPIO_HIGH)
+            if (GSW_STATE[Copy_u8SwitchName] == GPIO_HIGH)
             {
                 *Add_u8State = SWITCH_STATUS_PRESSED;
             }
-            else if (LOC_SwitchState == GPIO_LOW)
+            else if (GSW_STATE[Copy_u8SwitchName] == GPIO_LOW)
             {
                 *Add_u8State = SWITCH_STATUS_RELEASED;
             }

@@ -30,7 +30,7 @@ void switchesCheck (void)
 {
 	u8 message = 0;
 	u8 switchState = 0;
-	 static u8 counter = 0;
+	static u8 counter = 0;
 
 	if (readyForNewKey == 1) 
     {

@@ -8,6 +8,7 @@
 #include "MCAL/MUSART/MUSART_interface.h"
 #include "MCAL/MNVIC/MNVIC_interface.h"
 
+<<<<<<< HEAD
 u8 data[6] ="Shaher";
 u16 length = sizeof(data);  // Exclude the null terminator
 
@@ -28,6 +29,13 @@ u16 length = sizeof(data);  // Exclude the null terminator
    //       HLED_vSetLedStatus(Led_Start, LED_STATUS_OFF);
    //    }
 }*/
+=======
+static void DummyCB (void)
+{
+
+}
+
+>>>>>>> 3bf3c069c5f78d595d86a2383d00fb115709024b
 int main(void)
 { 
   RCC_enuEnableAHB1Peripheral(AHB1_GPIOA);
@@ -57,29 +65,17 @@ MGPIO_PIN_config_t USART_Rx_Pin_Config = {
 };
 MGPIO_enuSetPinConfig(&USART_Tx_Pin_Config);
 MGPIO_enuSetPinConfig(&USART_Rx_Pin_Config);
-
-
-   HLED_vLedInit();
-   //HLCD_vidPinInit();
-   //HLCD_voidLCDInitASYNCH();
-   //HSWITCH_vSwitchInit();
-   //SCHED_INIT();
-   //SCHED_START();
-    
-     MUSART_enuInit();
-     NVIC_EnableIRQ(IRQ_USART1);
-
-     MUSART_enuSendBufferAsync(USART_1, data, length,transmissionCompleteCallback);
-     // MUSART_enuRecieveBufferAsync(USART_1, data, length, receiveCallback);
-    
-   // MUSART_enuSendByteSync(USART_1,'M');
+NVIC_EnableIRQ(IRQ_USART1);
    
+   MUSART_enuInit();
+   HLED_vLedInit();
+   LCD_enuInitAsync(DummyCB);
+   HSWITCH_vSwitchInit();
+   SCHED_init();
+   SCHED_start();   
 
-  while (1)
-    { 
-    // MUSART_enuRecieveBufferAsync(USART_1, data, length, receiveCallback);
-  
-    }
+ 
+   
     return 0 ;
 }
 

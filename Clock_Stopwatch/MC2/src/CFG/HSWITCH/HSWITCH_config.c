@@ -15,11 +15,74 @@
  */
 const Switch_CFG_t SWITCHES [_Switch_Num]=
 {
-// [Switch_1]=
-// {
-//     .Switch_Port=GPIO_PORTB,
-//     .Switch_Pin=GPIO_PIN0,
-//     .Switch_Connection=SWITCH_CONN_PULLUP,
-//     //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
-// }
+[UP_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN0,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[DOWN_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN1,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[LEFT_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN2,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[RIGHT_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN3,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[MODE_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN4,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[EDIT_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN5,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[OK_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN8,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[RESET_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN12,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[START_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN13,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+},
+[STOP_SWITCH]=
+{
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN14,
+    .Switch_Connection=SWITCH_CONN_PULLUP,
+    //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
+}
 };

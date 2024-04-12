@@ -26,6 +26,8 @@ typedef enum
     lcdRunnable,
 	Switch_check,
 	Switch_Debounce,
+	Clock_Runnable,
+	Stopwatch_Runnable,
 
 	/* DO NOT DELETE THIS ↓↓↓, please :)*/
 	_RunnablesNumber_

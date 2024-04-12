@@ -70,11 +70,12 @@ extern LCD_strLCDPinConfig_t arrayofLCDPinConfig [7];
 
 
 typedef struct{
-    u8* string;
-    u64 number;
-    u8 state;
-    u8 type;
-    u8 cursorLocation;
+	u8* string;
+	u64 number;
+	u8 command;
+	u8 state;
+	u8 type;
+	u8 cursorLocation;
 }request_t;
 
 typedef struct{
@@ -103,8 +104,8 @@ enum{
 	reqClearScreen,
 	reqSetCursor,
 	reqWriteString,
-	reqWriteNumber
-
+	reqWriteNumber,
+	reqWriteCommand
 };
 
 
@@ -127,6 +128,8 @@ process_t setCursorProc;
 process_t initProc;
 
 process_t writeNumProc;
+
+process_t sendCommandProc;
 
 
 
@@ -719,7 +722,7 @@ static void LCD_initProcSM(void){
 		/* Turn the display ON, turn the cursor ON, and turn the blinking on */
 
 		if (writeCommandSM_remainingStages > 0){
-			LCD_writeCommandSM(LCD_DisplayON_CursorON_BlinkON);
+			LCD_writeCommandSM(LCD_DisplayON_CursorOFF_BlinkOFF);
 			writeCommandSM_remainingStages--;
 		}
 		else{
@@ -863,19 +866,46 @@ static void LCD_writeNumProc(void) {
 	/* Its usage is to check if the unit digit in the input number is zero or not */
 	static u8 LOC_uint8ZeroInUnitsChecker = 0;
 
-	if (userReq.number != 0) {
+	/* Its usage is to check if the input number is zero */
+	static u8 LOC_uint8NumberIsZeroFlag = 0xFF;
+
+
+	if (userReq.number == 0 && LOC_uint8NumberIsZeroFlag == 0xFF)
+	{
+		LOC_uint8NumberIsZeroFlag = 1;
+	}
+	else if (userReq.number != 0)
+	{
+		LOC_uint8NumberIsZeroFlag = 2;
+	}
+
+	if (LOC_uint8NumberIsZeroFlag == 1)
+	{
+
+		/* Check if We finished all stages of the LCD_writeDataSM or not */
+		if(writeDataSM_remainingStages > 0) {
+			LCD_writeDataSM(0 + 48);
+			writeDataSM_remainingStages--;
+		}
+		else{
+			/* We finished the printing of one digit */
+			writeDataSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+			LOC_uint8NumberIsZeroFlag = 0;
+		}
+	} else if (userReq.number != 0 && LOC_uint8NumberIsZeroFlag == 2) {
+
 		/* Save an inverted image of the input in a local variable to b able to print it properly */
 		LOC_uint64InvertedImage *= 10;
 		LOC_uint64InvertedImage += userReq.number % 10;
 
 		/* If the unit digit in the input number is zero then raise the Zero checker flag */
 		if (LOC_uint64InvertedImage == 0) {
-			LOC_uint8ZeroInUnitsChecker = 1;
+			LOC_uint8ZeroInUnitsChecker ++;
 		}
 
 		userReq.number /= 10;
 
-	} else if (LOC_uint64InvertedImage != 0) {
+	} else if (LOC_uint64InvertedImage != 0 && LOC_uint8NumberIsZeroFlag == 2) {
 		/* Send the inverted number to be printed digit-by-digit */
 
 		/* Check if We finished all stages of the LCD_writeDataSM or not */
@@ -890,7 +920,7 @@ static void LCD_writeNumProc(void) {
 		}
 	}
 	/* If the Zero checker flag is set then print Zero as the last thing to be printed */
-	else if (LOC_uint8ZeroInUnitsChecker == 1)
+	else if (LOC_uint8ZeroInUnitsChecker != 0)
 	{
 		/* Check if We finished all stages of the LCD_writeDataSM or not */
 		if(writeDataSM_remainingStages > 0) {
@@ -900,10 +930,14 @@ static void LCD_writeNumProc(void) {
 		else{
 			/* We finished the printing of one digit */
 			writeDataSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
-			LOC_uint8ZeroInUnitsChecker = 0;
+			LOC_uint8ZeroInUnitsChecker --;
 		}
 	} else {
 		/* We finished the Printing of the Whole number */
+		if (LOC_uint8NumberIsZeroFlag != 0xFF) {
+			LOC_uint8NumberIsZeroFlag = 0xFF;
+		}
+
 		userReq.type = reqNULL;
 		userReq.state = readyForRequest;
 		writeNumProc.callBack();
@@ -920,7 +954,34 @@ static void LCD_writeNumProc(void) {
 	/* Its usage is to check if the unit digit in the input number is zero or not */
 	static u8 LOC_uint8ZeroInUnitsChecker = 0;
 
-	if (userReq.number != 0) {
+	/* Its usage is to check if the input number is zero */
+	static u8 LOC_uint8NumberIsZeroFlag = 0xFF;
+
+
+	if (userReq.number == 0 && LOC_uint8NumberIsZeroFlag == 0xFF)
+	{
+		LOC_uint8NumberIsZeroFlag = 1;
+	}
+	else if (userReq.number != 0)
+	{
+		LOC_uint8NumberIsZeroFlag = 2;
+	}
+
+	if (LOC_uint8NumberIsZeroFlag == 1)
+	{
+
+		/* Check if We finished all stages of the LCD_writeDataSM or not */
+		if(writeDataSM_remainingStages > 0) {
+			LCD_writeDataSM(0 + 48);
+			writeDataSM_remainingStages--;
+		}
+		else{
+			/* We finished the printing of one digit */
+			writeDataSM_remainingStages = REMAINING_STAGES_8_BIT_MODE_CASE;
+			LOC_uint8NumberIsZeroFlag = 0;
+		}
+	} else if (userReq.number != 0 && LOC_uint8NumberIsZeroFlag == 2) {
+
 		/* Save an inverted image of the input in a local variable to b able to print it properly */
 		LOC_uint64InvertedImage *= 10;
 		LOC_uint64InvertedImage += userReq.number % 10;
@@ -932,7 +993,7 @@ static void LCD_writeNumProc(void) {
 
 		userReq.number /= 10;
 
-	} else if (LOC_uint64InvertedImage != 0) {
+	} else if (LOC_uint64InvertedImage != 0 && LOC_uint8NumberIsZeroFlag == 2) {
 		/* Send the inverted number to be printed digit-by-digit */
 
 		/* Check if We finished all stages of the LCD_writeDataSM or not */
@@ -961,6 +1022,10 @@ static void LCD_writeNumProc(void) {
 		}
 	} else {
 		/* We finished the Printing of the Whole number */
+		if (LOC_uint8NumberIsZeroFlag != 0xFF) {
+			LOC_uint8NumberIsZeroFlag = 0xFF;
+		}
+
 		userReq.type = reqNULL;
 		userReq.state = readyForRequest;
 		writeNumProc.callBack();
@@ -1013,6 +1078,55 @@ static void LCD_cleanProc(void){
 		userReq.type = NULL;
 		userReq.state = readyForRequest;
 		clearProc.callBack();
+	}
+
+#endif  /* #if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE) */
+
+}
+
+
+/**
+ *@brief : Process that sends a command.
+ *@param : void.
+ *@return: void.
+ */
+static void LCD_sendCommandProc(void){
+
+#if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE)
+	static u8 writeCommandSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+
+#elif (LCD_DATA_BITS_MODE == LCD_EIGHT_BITS_MODE)
+	static u8 writeCommandSM_remainingStages = REMAINING_STAGES_8_BIT_MODE_CASE;
+
+#endif  /* #if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE) */
+
+
+#if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE)
+
+	if(writeCommandSM_remainingStages > 0){
+		LCD_writeCommandSM(userReq.command);
+		writeCommandSM_remainingStages--;
+	}
+	else{
+		/* We finished the printing of one character */
+		writeCommandSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+		userReq.type = NULL;
+		userReq.state = readyForRequest;
+		sendCommandProc.callBack();
+	}
+
+#elif (LCD_DATA_BITS_MODE == LCD_EIGHT_BITS_MODE)
+
+	if(writeCommandSM_remainingStages > 0){
+		LCD_writeCommandSM(userReq.command);
+		writeCommandSM_remainingStages--;
+	}
+	else{
+		/* We finished the printing of one character */
+		writeCommandSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+		userReq.type = NULL;
+		userReq.state = readyForRequest;
+		writeCommandProc.callBack();
 	}
 
 #endif  /* #if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE) */
@@ -1162,6 +1276,37 @@ LCD_enuError_t LCD_enuClearScreenAsync(void (*callBackFn)(void)){
 
 
 /**
+ *@brief : Function that sends a command to the LCD.
+ *@param : A command and a callback function you want to be called after finishing your request.
+ *@return: Error State.
+ */
+LCD_enuError_t LCD_enuSendCommandAsync(u8 Copy_uint8Command ,void (*callBackFn)(void)){
+	/* A local variable to assign the error state inside it and use only one return in the whole function
+	 * through returning the value of this local variable.
+	 * Initially we assume that everything is OK, if not its value will be changed according to a definite
+	 * error type */
+	LCD_enuError_t LOC_enuErrorStatus = LCD_enuOk;
+
+	/* Check on the Passed Pointer whether it is a NULL pointer or not */
+	if(callBackFn == NULL_PTR){
+		/* if the passed pointer is a NULL, return error */
+		LOC_enuErrorStatus = LCD_enuNullPointer;
+	}
+	else if ((lcdState == stateOperational) && (userReq.state == readyForRequest)){
+		sendCommandProc.callBack = callBackFn;
+		userReq.command = Copy_uint8Command;
+		userReq.type = reqWriteCommand;
+		userReq.state = busyWithRequest;
+	}
+	else{
+		/* Do Nothing */
+	}
+
+	return LOC_enuErrorStatus;
+}
+
+
+/**
  *@brief : Function that sets the cursor's position.
  *@param : The row and the column you want the cursor to go at, and a callback function
  *			you want to be called after finishing your request.
@@ -1295,8 +1440,11 @@ void RUNNABLE_LCD(void){
 				LCD_writeProc();
 				break;
 			case reqWriteNumber:
-                LCD_writeNumProc();
-                break;
+				LCD_writeNumProc();
+				break;
+			case reqWriteCommand:
+				LCD_sendCommandProc();
+				break;
 			default:
 				/* Do Nothing */
 				break;

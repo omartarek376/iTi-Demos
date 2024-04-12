@@ -105,9 +105,11 @@ typedef enum
 /*								Variables's Declaration								*/
 /************************************************************************************/
 
-MODES Mode = STOPWATCH_MODE;
+MODES Mode = CLOCK_MODE;
 
-MODES previousMode = CLOCK_MODE;
+MODES previousMode = STOPWATCH_MODE;
+
+extern u8 buttonPressed ;
 
 static EDITMODES EditMode = NOT_ACTIVATED;
 
@@ -126,6 +128,8 @@ static u8 requestHandled = TRUE;
 static u8 printEntireScreen = TRUE;
 
 static u8 dayPassed = FALSE ;
+
+static u8 buttonHandled = TRUE ;
 
 
 
@@ -147,7 +151,7 @@ static u8 Decryption(u8 value)
 	u8 CheckSumBits = (value) & 0x0F;
 	/* Extracting the data bits from the received encrypted message */
 	u8 Data = (value >> 4);
-	
+
 	/* Check if the received message is correct and not corrupted */
 	if((CheckSumBits ^ value) == 0x0F)
 	{
@@ -197,24 +201,24 @@ static void receiveCallback(void)
  */
 void clockRunnable(void)
 {  
-	static u32  entryCounter  = 1;
+	static u32  entryCounter  = 0;
 	static u32  LCD_Counter   = 0;
 	static u32  printCounter  = 0;
 
 	u8 RecivedMessage  = 0;
 
 	/* Variables related to the date and time. Initially We are setting them as follows */
-	static u8 hours   = 0;
-	static u8 minutes = 26;
+	static u8 hours   = 23;
+	static u8 minutes = 59;
 	static u8 seconds = 50;
-	static u8 day = 11;
-	static u8 month = 4;
-	static u16 year = 2024;
+	static u8 day = 31;
+	static u8 month = 12;
+	static u16 year = 2023;
 
 	/************************************************************************************/
 	/* 			The following part updates the date and time every 1 seconds 			*/
 	/************************************************************************************/
-	if((entryCounter % 10 == 0) && (entryCounter != 0))
+	if(entryCounter % 100 == 0)
 	{    
 		/* Every 1 second update the seconds variable */
 		seconds++;
@@ -236,7 +240,7 @@ void clockRunnable(void)
 				day++;
 				dayPassed =TRUE;
 			}
-			
+
 			/* If a total month passed increment the month digits and reset the days digits to one */
 			if((month == 1 ||month == 3 ||month == 5 ||month == 7 ||month == 8 ||month == 10 || month == 12) \
 					&& (day == 32))
@@ -258,7 +262,7 @@ void clockRunnable(void)
 			{
 				/* Do Nothing */
 			}
-			
+
 			if(month == 13)
 			{
 				/* If 12 months passed, reset the months digits to 1 and increment the years digits by one */
@@ -268,479 +272,92 @@ void clockRunnable(void)
 		}
 	}
 	entryCounter ++ ;
-	if( Mode == CLOCK_MODE && printEntireScreen == FALSE)
-		{   
-			switch(printCounter)
-			{   
 
-				case 0:
-				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_1,DummyCB); 
-				printCounter ++;
-				break;
-				case 1:
-				LCD_enuWriteStringAsync("Time:   ",DummyCB);
-				printCounter ++;
-				break;
-				case 2:
-				if (hours < 10)
-				{
-					LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(hours,DummyCB);
-				}
-				printCounter ++;
-				break;
-			case 3:
-				if(hours < 10)
-				{
-					LCD_enuWriteNumberAsync(hours,DummyCB);
-				}
-				else
-				{
-
-				}
-				printCounter ++ ;
-				break;
-				case 4:
-				LCD_enuWriteStringAsync(":",DummyCB);
-				printCounter ++;
-				break;
-				case 5:
-				if (minutes < 10)
-				{
-					LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(minutes,DummyCB);
-				}
-				printCounter ++;
-				break;
-			case 6:
-				if(minutes < 10)
-				{
-					LCD_enuWriteNumberAsync(minutes,DummyCB);
-				}
-				else
-				{
-
-				}
-				printCounter ++ ;
-				break;
-				case 7:
-				LCD_enuWriteStringAsync(":",DummyCB);
-				printCounter ++;
-				break;
-				case 8:
-				if (seconds < 10)
-				{
-					LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(seconds,DummyCB);
-				}
-				printCounter ++;
-				break;
-				case 9:
-				if(seconds < 10)
-				{
-					LCD_enuWriteNumberAsync(seconds,DummyCB);
-				}
-				else
-				{
-
-				}
-				printCounter ++ ;
-				break;
-				case 10:
-				LCD_enuSetCursorAsync(LCD_enuFirstRow,LCD_enuColumn_1,DummyCB); 
-				printCounter ++;
-				break;
-				case 11:
-				LCD_enuWriteStringAsync("Date: ",DummyCB);
-				printCounter ++;
-				break;
-				case 12:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE )
-				{
-				
-				}
-				else
-				{
-					LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_9,DummyCB); 
-				}
-				printCounter ++;
-				break;
-				case 13:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
-				{  
-					if(day < 10)
-					{
-					LCD_enuWriteStringAsync("0",DummyCB);
-					}
-					else
-					{
-						LCD_enuWriteNumberAsync(day,DummyCB);
-					}
-				}
-				else
-				{
-					if(hours < 10)
-					{
-					LCD_enuWriteStringAsync("0",DummyCB);
-					}
-					else
-					{
-						LCD_enuWriteNumberAsync(hours,DummyCB);
-					}
-				}
-				printCounter ++;
-				break;
-				case 14:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
-				{  
-					if(day < 10)
-					{
-					LCD_enuWriteNumberAsync(day,DummyCB);
-					}
-					else
-					{
-						
-					}
-				}
-				else
-				{
-					if(hours < 10)
-					{
-					LCD_enuWriteNumberAsync(hours,DummyCB);
-					}
-					else
-					{
-						
-					}
-				}
-				printCounter ++;
-				break;
-
-				case 15:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
-				{
-					LCD_enuWriteStringAsync("/",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteStringAsync(":",DummyCB);
-				}
-				printCounter ++;
-				break;
-				case 16:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
-				{  
-					if(month < 10)
-					{
-					LCD_enuWriteStringAsync("0",DummyCB);
-					}
-					else
-					{
-						LCD_enuWriteNumberAsync(month,DummyCB);
-					}
-				}
-				else
-				{
-					if(minutes < 10)
-					{
-					LCD_enuWriteStringAsync("0",DummyCB);
-					}
-					else
-					{
-						LCD_enuWriteNumberAsync(minutes,DummyCB);
-					}
-				}
-				printCounter ++;
-				break;
-				case 17:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
-				{  
-					if(month < 10)
-					{
-					LCD_enuWriteNumberAsync(month,DummyCB);
-					}
-					else
-					{
-						
-					}
-				}
-				else
-				{
-					if(minutes < 10)
-					{
-					LCD_enuWriteNumberAsync(minutes,DummyCB);
-					}
-					else
-					{
-						
-					}
-				}
-				printCounter ++;
-				break;
-				case 18:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
-				{
-					LCD_enuWriteStringAsync("/",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteStringAsync(":",DummyCB);
-				}
-				printCounter ++;
-				break;
-
-				case 19:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
-				{  
-					if (year < 1000)
-				{
-					LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else if (year < 100)
-				{
-					LCD_enuWriteStringAsync("00",DummyCB);
-				}
-				else if (year < 10)
-				{
-					LCD_enuWriteStringAsync("000",DummyCB);
-				}
-				else if (year < 1)
-				{
-					LCD_enuWriteStringAsync("0000",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				}
-				else
-				{
-					if(seconds < 10)
-					{
-					LCD_enuWriteStringAsync("0",DummyCB);
-					}
-					else
-					{
-						LCD_enuWriteNumberAsync(seconds,DummyCB);
-					}
-				}
-				printCounter ++;
-				break;
-				case 20:
-				if (dayPassed == TRUE || previousMode == STOPWATCH_MODE)
-				{  
-					if (year < 1000)
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				else if (year < 100)
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				else if (year < 10)
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				else if (year < 1)
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				else
-				{
-					
-				}
-				dayPassed = FALSE ;
-					
-				}
-				else
-				{
-					if(seconds < 10)
-					{
-					LCD_enuWriteNumberAsync(seconds,DummyCB);
-					}
-					else
-					{
-						
-					}
-				}
-				printCounter = 0;
-
-				break;
-			}
-		}
 	/************************************************************************************/
 	/* 	The following part checks on the selected mode, if it is the CLOCK_MODE, it Will
 		display Date and Time after each update */
 	/************************************************************************************/
 	if(Mode == CLOCK_MODE )
-	{  
-		if(printEntireScreen == TRUE)
+	{
+		switch(printCounter)
 		{
 
-			switch(LCD_Counter)
+		case 0:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_1,DummyCB);
+			printCounter ++;
+			break;
+		case 1:
+			printCounter ++;
+			break;
+		case 2:
+			LCD_enuWriteStringAsync("Time:   ",DummyCB);
+			printCounter ++;
+			break;
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+			printCounter ++;
+			break;
+		case 15:
+			if (hours < 10)
 			{
-			case 0 :
-				LCD_enuSetCursorAsync  (LCD_enuFirstRow,LCD_enuColumn_1 ,DummyCB);
-				LCD_Counter ++ ;
-				break;
-			case 1 :
-				LCD_enuWriteStringAsync("Date: ",DummyCB);
-				LCD_Counter ++ ;
-				break;
-			case 2 :
-				if (day < 10)
-				{
 				LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(day,DummyCB);
-				}
-				LCD_Counter ++ ;
-				break;
-			case 3:
-				if (day < 10)
-				{
-				LCD_enuWriteNumberAsync(day,DummyCB);
-				}
-				else
-				{
-				 
-				}
-				LCD_Counter ++ ;
-				break;
-			case 4 :
-				LCD_enuWriteStringAsync("/",DummyCB);
-				LCD_Counter ++ ;
-				break;
-			case 5 :
-				if (month < 10)
-				{
-				LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(month,DummyCB);
-				}
-				LCD_Counter ++ ;
-				break;
-			case 6:
-				if (month < 10)
-				{
-				LCD_enuWriteNumberAsync(month,DummyCB);
-				}
-				else
-				{
-				 
-				}
-				LCD_Counter ++ ;
-				break;
-			case 7 :
-				LCD_enuWriteStringAsync("/",DummyCB);
-				LCD_Counter ++ ;
-				break;
-			case 8 :
-				if (year < 1000)
-				{
-					LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else if (year < 100)
-				{
-					LCD_enuWriteStringAsync("00",DummyCB);
-				}
-				else if (year < 10)
-				{
-					LCD_enuWriteStringAsync("000",DummyCB);
-				}
-				else if (year < 1)
-				{
-					LCD_enuWriteStringAsync("0000",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				LCD_Counter ++ ;
-				break;
-			case 9 :
-				if (year < 1000)
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				else if (year < 100)
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				else if (year < 10)
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				else if (year < 1)
-				{
-					LCD_enuWriteNumberAsync(year,DummyCB);
-				}
-				else
-				{
-					
-				}
-				LCD_Counter ++ ;
-				break;
-			case 10 :
-				LCD_enuSetCursorAsync  (LCD_enuSecondRow,LCD_enuColumn_1 ,DummyCB);
-				LCD_Counter ++ ;
-				break;
-			case 11:
-				LCD_enuWriteStringAsync("Time:   ",DummyCB);
-				LCD_Counter ++ ;
-				break;
-			case 12:
-				if (hours < 10)
-				{
-					LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(hours,DummyCB);
-				}
-				LCD_Counter ++ ;
-				break;
-			case 13:
-				if(hours < 10)
-				{
-					LCD_enuWriteNumberAsync(hours,DummyCB);
-				}
-				else
-				{
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(hours,DummyCB);
+			}
+			printCounter ++;
+			break;
+		case 16:
+			printCounter ++;
+			break;
+		case 17:
+			if(hours < 10)
+			{
+				LCD_enuWriteNumberAsync(hours,DummyCB);
+			}
+			else
+			{
 
-				}
-				LCD_Counter ++ ;
-				break;
-			case 14 :
-				LCD_enuWriteStringAsync(":",DummyCB);
-				LCD_Counter ++ ;
-				break;
-			case 15 :
-				if (minutes < 10)
-				{
-					LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(minutes,DummyCB);
-				}
-				LCD_Counter ++ ;
-				break;
-			case 16 :
-				if(minutes < 10)
+			}
+			printCounter ++ ;
+			break;
+		case 18:
+			printCounter ++;
+			break;
+		case 19:
+			LCD_enuWriteStringAsync(":",DummyCB);
+			printCounter ++;
+			break;
+		case 20:
+			printCounter ++;
+			break;
+		case 21:
+			if (minutes < 10)
+			{
+				LCD_enuWriteStringAsync("0",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(minutes,DummyCB);
+			}
+			printCounter ++;
+			break;
+		case 22:
+			printCounter ++;
+			break;
+		case 23:
+			if(minutes < 10)
 			{
 				LCD_enuWriteNumberAsync(minutes,DummyCB);
 			}
@@ -748,24 +365,33 @@ void clockRunnable(void)
 			{
 
 			}
-				LCD_Counter ++ ;
-				break;
-			case 17:
-				LCD_enuWriteStringAsync(":",DummyCB);
-				LCD_Counter ++ ;
-				break;
-			case 18 :
-				if (seconds < 10)
-				{
-					LCD_enuWriteStringAsync("0",DummyCB);
-				}
-				else
-				{
-					LCD_enuWriteNumberAsync(seconds,DummyCB);
-				}
-				LCD_Counter ++ ;
-				break;
-			case 19 :
+			printCounter ++ ;
+			break;
+		case 24:
+			printCounter ++;
+			break;
+		case 25:
+			LCD_enuWriteStringAsync(":",DummyCB);
+			printCounter ++;
+			break;
+		case 26:
+			printCounter ++;
+			break;
+		case 27:
+			if (seconds < 10)
+			{
+				LCD_enuWriteStringAsync("0",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(seconds,DummyCB);
+			}
+			printCounter ++;
+			break;
+		case 28:
+			printCounter ++;
+			break;
+		case 29:
 			if(seconds < 10)
 			{
 				LCD_enuWriteNumberAsync(seconds,DummyCB);
@@ -774,22 +400,299 @@ void clockRunnable(void)
 			{
 
 			}
-				printEntireScreen = FALSE ;
-				LCD_Counter = 0 ;
-				break;
+			printCounter ++ ;
+			break;
+		case 30:
+			printCounter ++;
+			break;
+		case 31:
+			LCD_enuSetCursorAsync(LCD_enuFirstRow,LCD_enuColumn_1,DummyCB);
+			printCounter ++;
+			break;
+		case 32:
+			printCounter ++;
+			break;
+		case 33:
+			LCD_enuWriteStringAsync("Date: ",DummyCB);
+			printCounter ++;
+			break;
+		case 34:
+		case 35:
+		case 36:
+		case 37:
+		case 38:
+		case 39:
+		case 40:
+		case 41:
+		case 42:
+			printCounter ++;
+			break;
+		case 43:
+			if (day < 10)
+			{
+				LCD_enuWriteStringAsync("0",DummyCB);
 			}
+			else
+			{
+				LCD_enuWriteNumberAsync(day,DummyCB);
+			}
+			printCounter++;
+			break;
+		case 44:
+			printCounter++;
+			break;
+		case 45:
+			if (day < 10)
+			{
+				LCD_enuWriteNumberAsync(day,DummyCB);
+			}
+			else
+			{
+
+			}
+			printCounter++;
+			break;
+		case 46:
+			printCounter++;
+			break;
+		case 47:
+			LCD_enuWriteStringAsync("/",DummyCB);
+			printCounter++;
+			break;
+		case 48:
+			printCounter++;
+			break;
+		case 49:
+			if (month < 10)
+			{
+				LCD_enuWriteStringAsync("0",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(month,DummyCB);
+			}
+			printCounter++;
+			break;
+		case 50:
+			printCounter++;
+			break;
+		case 51:
+			if (month < 10)
+			{
+				LCD_enuWriteNumberAsync(month,DummyCB);
+			}
+			else
+			{
+
+			}
+			printCounter++;
+			break;
+		case 52:
+			printCounter++;
+			break;
+		case 53:
+			LCD_enuWriteStringAsync("/",DummyCB);
+			printCounter++;
+			break;
+		case 54:
+			printCounter++;
+			break;
+		case 55:
+			if (year < 1000)
+			{
+				LCD_enuWriteStringAsync("0",DummyCB);
+			}
+			else if (year < 100)
+			{
+				LCD_enuWriteStringAsync("00",DummyCB);
+			}
+			else if (year < 10)
+			{
+				LCD_enuWriteStringAsync("000",DummyCB);
+			}
+			else if (year < 1)
+			{
+				LCD_enuWriteStringAsync("0000",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(year,DummyCB);
+			}
+			printCounter++;
+			break;
+		case 56:
+		case 57:
+		case 58:
+		case 59:
+		case 60:
+		case 61:
+			printCounter++;
+			break;
+		case 62:
+			if (year < 1000)
+			{
+				LCD_enuWriteNumberAsync(year,DummyCB);
+			}
+			else if (year < 100)
+			{
+				LCD_enuWriteNumberAsync(year,DummyCB);
+			}
+			else if (year < 10)
+			{
+				LCD_enuWriteNumberAsync(year,DummyCB);
+			}
+			else if (year < 1)
+			{
+				LCD_enuWriteNumberAsync(year,DummyCB);
+			}
+			else
+			{
+
+			}
+			printCounter++;
+			break;
+		case 63:
+		case 64:
+		case 65:
+		case 66:
+			printCounter++;
+			break;
+		case 67:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_9,DummyCB);
+			printCounter++;
+			break;
+		case 68:
+			printCounter++;
+			break;
+		case 69:
+			if (hours < 10)
+			{
+				LCD_enuWriteStringAsync("0",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(hours,DummyCB);
+			}
+			printCounter ++;
+			break;
+		case 70:
+			printCounter ++;
+			break;
+		case 71:
+			if(hours < 10)
+			{
+				LCD_enuWriteNumberAsync(hours,DummyCB);
+			}
+			else
+			{
+
+			}
+			printCounter ++ ;
+			break;
+		case 72:
+			printCounter ++;
+			break;
+		case 73:
+			LCD_enuWriteStringAsync(":",DummyCB);
+			printCounter ++;
+			break;
+		case 74:
+			printCounter ++;
+			break;
+		case 75:
+			if (minutes < 10)
+			{
+				LCD_enuWriteStringAsync("0",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(minutes,DummyCB);
+			}
+			printCounter ++;
+			break;
+		case 76:
+			printCounter ++;
+			break;
+		case 77:
+			if(minutes < 10)
+			{
+				LCD_enuWriteNumberAsync(minutes,DummyCB);
+			}
+			else
+			{
+
+			}
+			printCounter ++ ;
+			break;
+		case 78:
+			printCounter ++;
+			break;
+		case 79:
+			LCD_enuWriteStringAsync(":",DummyCB);
+			printCounter ++;
+			break;
+		case 80:
+			printCounter ++;
+			break;
+		case 81:
+			if (seconds < 10)
+			{
+				LCD_enuWriteStringAsync("0",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(seconds,DummyCB);
+			}
+			printCounter ++;
+			break;
+		case 82:
+			printCounter ++;
+			break;
+		case 83:
+			if(seconds < 10)
+			{
+				LCD_enuWriteNumberAsync(seconds,DummyCB);
+			}
+			else
+			{
+
+			}
+			printCounter ++ ;
+			break;
+		case 84:
+			printCounter ++;
+			break;
+		case 85:
+		case 86:
+		case 87:
+		case 88:
+		case 89:
+		case 90:
+		case 91:
+		case 92:
+		case 93:
+		case 94:
+		case 95:
+		case 96:
+		case 97:
+		case 98:
+			printCounter ++;
+			break;
+		case 99:
+			printCounter = 0;
+			break;
 		}
-		
+
 		/************************************************************************************/
 		/* 	The following part checks if We are ready for receiving a new button request or
 			busy handling a current request */
 		/************************************************************************************/
-		
+
 		/* Check if the previous button request is handled and We are ready for receving a new request or not */
-		if(requestHandled == TRUE)
+		if( buttonPressed == TRUE && buttonHandled == TRUE)
 		{
-			MUSART_enuRecieveBufferAsync(USART_1,&RecivedMessage,1,receiveCallback);
-			requestHandled = FALSE;
+			MUSART_enuRecieveBufferAsync(USART_1,&RecivedMessage,1,receiveCallback);	
+			buttonHandled = FALSE ;
 		}
 		else
 		{
@@ -799,16 +702,16 @@ void clockRunnable(void)
 		/************************************************************************************/
 		/* 	The following part checks if We received a new message (a new button press) */
 		/************************************************************************************/
-		
+
 		/* If a message is received go on handle it */
 		if(receiveFlag == TRUE)
 		{
 			/* Lower the flag so We could be able to receive the next request once the current one is handled */
 			receiveFlag = FALSE;
-			
+
 			u8 receivedButton = 0;
 			receivedButton = Decryption(RecivedMessage);
-			
+
 			/* Check whether the recevied data is correct and We can deal with its content
 				or it is corrupted so ignore it */
 			if(receivedButton != 0xFF)
@@ -840,11 +743,11 @@ void clockRunnable(void)
 						/* Calculating the position where the user is setting the cursor on to make sure
 							that he is editing only the date and time digits*/
 						CursorPos = (CurrentCol) + (CurrentRow * 16);
-						
+
 						/* Check on the position of the cursor */
 						switch (CursorPos)
 						{
-							/* The cursor now is at the position of the Days' units */
+						/* The cursor now is at the position of the Days' units */
 						case DAY_TENS_POSITION:
 							if (month == 2)
 							{
@@ -881,7 +784,7 @@ void clockRunnable(void)
 							}
 							break;
 						case DAY_UNITS_POSITION:
-						/* The cursor now is at the position of the Days' units */
+							/* The cursor now is at the position of the Days' units */
 							if((month == 2) && (day == 28))
 							{
 								/* Do Nothing as 28 is the last day in February */
@@ -1024,11 +927,11 @@ void clockRunnable(void)
 						/* Calculating the position where the user is setting the cursor on to make sure
 							that he is editing only the date and time digits*/
 						CursorPos = (CurrentCol) + (CurrentRow * 16);
-						
+
 						/* Check on the position of the cursor */
 						switch (CursorPos)
 						{
-							
+
 						/* The cursor now is at the position of the Days' units */
 						case DAY_TENS_POSITION:
 							if ((day >= 1) && (day <= 9))
@@ -1240,27 +1143,35 @@ void clockRunnable(void)
 						}
 					}
 					break;
-			case EDIT_SWITCH_VALUE :
-				if(EditMode == NOT_ACTIVATED)
-				{
-					EditMode = ACTIVATED ;
-					LCD_enuSetCursorAsync  (LCD_enuSecondRow,LCD_enuColumn_3 ,DummyCB);
-				}
-				else if (EditMode == ACTIVATED)
-				{
-					EditMode = NOT_ACTIVATED ;
-				}
+				case EDIT_SWITCH_VALUE :
+					if(EditMode == NOT_ACTIVATED)
+					{
+						EditMode = ACTIVATED ;
+
+						LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkON,DummyCB);
+
+					}
+					else if (EditMode == ACTIVATED)
+					{
+						EditMode = NOT_ACTIVATED ;
+						OKState = NOT_PRESSED;
+						LCD_enuSendCommandAsync(LCD_DisplayON_CursorOFF_BlinkOFF,DummyCB);
+					}
 					break;
 				}
-				
+
 				/* After handling the latest request, raise this flag to make
 					the driver ready to receive a new button request */
-				requestHandled = TRUE;
+				//requestHandled = TRUE;
+				buttonPressed = FALSE ;
+				buttonHandled = TRUE;
 			}
 			else
 			{
 				/* If the data is corrupted raise this flag to make the driver ready to receive a new button request */
-				requestHandled = TRUE;
+				//requestHandled = TRUE;
+				buttonPressed = FALSE ;
+				buttonHandled = TRUE;
 			}
 		}
 		else

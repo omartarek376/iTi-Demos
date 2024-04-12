@@ -98,6 +98,8 @@ extern MODES Mode ;
 
 extern MODES previousMode ;
 
+extern u8 buttonPressed ;
+
 static EDITMODES EditMode = NOT_ACTIVATED;
 
 static OKSTATE OKState = NOT_PRESSED;
@@ -117,6 +119,8 @@ static u8 printEntireScreen = TRUE;
 static u8 startFlag = TRUE ;
 
 static u8 resetFlag = FALSE ;
+
+static u8 buttonHandled = TRUE ;
 
 
 /************************************************************************************/
@@ -979,10 +983,11 @@ void StopwatchRunnable(void)
 		/************************************************************************************/
 
 		/* Check if the previous button request is handled and We are ready for receving a new request or not */
-		if(requestHandled == TRUE)
+		if( buttonPressed == TRUE && buttonHandled == TRUE)
 		{
-			MUSART_enuRecieveBufferAsync(USART_1,&RecivedMessage,1,receiveCallback);
-			requestHandled = FALSE;
+			MUSART_enuRecieveBufferAsync(USART_1,&RecivedMessage,1,receiveCallback);	
+			 buttonHandled = FALSE;
+			 
 		}
 		else
 		{
@@ -1308,12 +1313,16 @@ void StopwatchRunnable(void)
 
 				/* After handling the latest request, raise this flag to make
 					the driver ready to receive a new button request */
-				requestHandled = TRUE;
+				//requestHandled = TRUE;
+				buttonPressed = FALSE ;
+				buttonHandled = TRUE;
 			}
 			else
 			{
 				/* If the data is corrupted raise this flag to make the driver ready to receive a new button request */
-				requestHandled = TRUE;
+				//requestHandled = TRUE;
+				buttonPressed = FALSE ;
+				buttonHandled = TRUE;
 			}
 		}
 		else

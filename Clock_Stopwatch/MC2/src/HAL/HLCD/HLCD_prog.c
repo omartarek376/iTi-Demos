@@ -582,7 +582,7 @@ static void LCD_initProcSM(void){
 		/* Turn the display ON, turn the cursor ON, and turn the blinking on */
 
 		if (writeCommandSM_remainingStages > 0){
-			LCD_writeCommandSM(LCD_DisplayON_CursorON_BlinkON);
+			LCD_writeCommandSM(LCD_DisplayON_CursorOFF_BlinkOFF);
 			writeCommandSM_remainingStages--;
 		}
 		else{

@@ -4,10 +4,9 @@
 
 void Runnable_APP1 (void)
 {       
-
-        HLED_vToggle (Led_Start);
+         HLED_vToggle (Led_Start);
 //       u32 state =0;
-//       state = HSWITCH_u32GetSwitchState(UP_SWITCH);
+//       state = HSWITCH_u32GetSwitchState(MODE_SWITCH);
 
 //       if(state == SWITCH_STATUS_PRESSED)
 //       {

@@ -23,11 +23,12 @@
 
 /* Add here The functions that you will set in the callBackFn member for the runnables */
 extern void Runnable_APP1 (void);
-extern void switchesCheck (void);
+//extern void switchesCheck (void);
 extern void RUNNABLE_LCD(void);
 extern void SW_Runnable(void);
 extern void clockRunnable(void);
 extern void StopwatchRunnable(void);
+extern void switchesCheckRunnable (void); 
 
 
 
@@ -60,15 +61,15 @@ extern void StopwatchRunnable(void);
 
 const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 	[toggleTheLED] 		= { .name = "Toggle LED each second",
-							.periodicityMS = 500,
+							.periodicityMS = 1000,
 							.firstDelay = 0,
 							.callBackFn = Runnable_APP1 
 	},
-	// [lcdRunnable] 		= { .name = "LCD module",
-	// 						.periodicityMS = 1,
-	// 						.firstDelay=0,
-	// 						.callBackFn = RUNNABLE_LCD
-	// },
+	[lcdRunnable] 		= { .name = "LCD module",
+							.periodicityMS = 1,
+							.firstDelay=0,
+							.callBackFn = RUNNABLE_LCD
+	},
 	[Switch_Debounce] 		= { .name = "Switch_Debounce",
 							.periodicityMS = 30,
 							.firstDelay=50,
@@ -76,20 +77,20 @@ const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 	},
 
 	[Switch_check]= { .name = "Switch Check",
-							.periodicityMS =200,
-							.firstDelay=2000,
-							.callBackFn = switchesCheck
+							.periodicityMS =500,
+							.firstDelay=50,
+							.callBackFn = switchesCheckRunnable 
 	},
-	// [Clock_Runnable]= { .name = "Clock_Runnable",
-	// 						.periodicityMS =100,
-	// 						.firstDelay=50,
-	// 						.callBackFn = clockRunnable
-	// },
+	[Clock_Runnable]= { .name = "Clock_Runnable",
+							.periodicityMS =10,
+							.firstDelay=50,
+							.callBackFn = clockRunnable
+	},
 
-	// [Stopwatch_Runnable]= { .name = "Stopwatch_Runnable",
-	// 						.periodicityMS = 20,
-	// 						.firstDelay=50,
-	// 						.callBackFn = StopwatchRunnable
-	// }
+	[Stopwatch_Runnable]= { .name = "Stopwatch_Runnable",
+							.periodicityMS = 20,
+							.firstDelay=50,
+							.callBackFn = StopwatchRunnable
+	}
 
 };

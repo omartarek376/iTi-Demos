@@ -121,8 +121,8 @@ MGPIO_enuErrorStatus_t MGPIO_enuSetPinConfig (MGPIO_PIN_config_t* Add_strPinConf
 	 else if (Add_strPinConfg->GPIOMode == GPIO_INPUT)
 	 { 
 		LOC_u32InputTypeValue = GPIO_PORT-> PUPDR;
-		LOC_u32InputTypeValue &= ~((GPIO_PUPD_SHIFTING_MASK)<<(GPIO_PUPD_MASK * Add_strPinConfg->GPIOPin));
-		LOC_u32InputTypeValue |= (Add_strPinConfg->GPIO_INPUTTYPE<<(GPIO_PUPD_MASK * Add_strPinConfg->GPIOPin));
+		LOC_u32InputTypeValue &= ~((GPIO_PUPD_MASK)<<(GPIO_PUPD_SHIFTING_MASK * Add_strPinConfg->GPIOPin));
+		LOC_u32InputTypeValue |= ((Add_strPinConfg->GPIO_INPUTTYPE)<<(GPIO_PUPD_SHIFTING_MASK * Add_strPinConfg->GPIOPin));
         GPIO_PORT-> PUPDR = LOC_u32InputTypeValue;
 	 }
 	 

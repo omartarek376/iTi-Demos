@@ -8,12 +8,12 @@ typedef enum
   DOWN_SWITCH,
   RIGHT_SWITCH,
   LEFT_SWITCH,
-  START_SWITCH,
-  STOP_SWITCH,
-  RESET_SWITCH,
   OK_SWITCH,
-  EDIT_SWITCH,
+  RESET_SWITCH,
   MODE_SWITCH,
+  STOP_SWITCH,
+  START_SWITCH,
+  EDIT_SWITCH,
  _Switch_Num         // Total number of switches (must be last)
 } Switches_t;
 

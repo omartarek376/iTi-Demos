@@ -8,34 +8,11 @@
 #include "MCAL/MUSART/MUSART_interface.h"
 #include "MCAL/MNVIC/MNVIC_interface.h"
 
-<<<<<<< HEAD
-u8 data[6] ="Shaher";
-u16 length = sizeof(data);  // Exclude the null terminator
-
-     void transmissionCompleteCallback(void) 
-    {
-       //HLED_vSetLedStatus(Led_Start, LED_STATUS_ON);
-       HLED_vToggle(Led_Start);
-    }
-/*   void receiveCallback()
-{
-   MUSART_enuSendBufferAsync(USART_1, data, length ,transmissionCompleteCallback);
-   // if(data == "mina")
-   //    {
-   //       HLED_vSetLedStatus(Led_Start, LED_STATUS_ON);
-   //    }
-   //    else
-   //    {
-   //       HLED_vSetLedStatus(Led_Start, LED_STATUS_OFF);
-   //    }
-}*/
-=======
 static void DummyCB (void)
 {
 
 }
 
->>>>>>> 3bf3c069c5f78d595d86a2383d00fb115709024b
 int main(void)
 { 
   RCC_enuEnableAHB1Peripheral(AHB1_GPIOA);
@@ -43,7 +20,6 @@ int main(void)
   RCC_enuEnableAHB1Peripheral(AHB1_GPIOC);
   RCC_enuEnableAPB2Peripheral(APB2_USART1);
 
-   LCD_enuInitAsync(NULL);
   MGPIO_PIN_config_t USART_Tx_Pin_Config = {
     .GPIOPort = GPIO_PORTB,                        // Assuming USART Tx pin is connected to GPIO Port A
     .GPIOPin = GPIO_PIN6,                          // Assuming USART Tx pin is connected to pin 9

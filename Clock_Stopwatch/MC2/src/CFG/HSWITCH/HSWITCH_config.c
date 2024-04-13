@@ -32,21 +32,21 @@ const Switch_CFG_t SWITCHES [_Switch_Num]=
 [LEFT_SWITCH]=
 {
     .Switch_Port=GPIO_PORTB,
-    .Switch_Pin=GPIO_PIN2,
+    .Switch_Pin=GPIO_PIN10,
     .Switch_Connection=SWITCH_CONN_PULLUP,
     //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
 },
 [RIGHT_SWITCH]=
 {
-    .Switch_Port=GPIO_PORTB,
-    .Switch_Pin=GPIO_PIN3,
+    .Switch_Port=GPIO_PORTA,
+    .Switch_Pin=GPIO_PIN8,
     .Switch_Connection=SWITCH_CONN_PULLUP,
     //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
 },
 [MODE_SWITCH]=
 {
-    .Switch_Port=GPIO_PORTB,
-    .Switch_Pin=GPIO_PIN4,
+    .Switch_Port=GPIO_PORTA,
+    .Switch_Pin=GPIO_PIN9,
     .Switch_Connection=SWITCH_CONN_PULLUP,
     //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
 },

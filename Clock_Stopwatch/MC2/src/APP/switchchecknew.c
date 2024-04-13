@@ -13,7 +13,7 @@
 #define EDIT_SWITCH_VALUE   0x0A
 
 u8 static readyForNewKey = 1;
-u8 buttonPressed = 0;
+u8 message[1] = {0};
                                                       
 static u8 Encryption(u8 value)                                                                          
 { 
@@ -25,7 +25,6 @@ static u8 Encryption(u8 value)
 static void messageSent (void) 
 {
 	readyForNewKey = 1;
-	buttonPressed  = 1;
 }
 
 // A runnable the comes every 100 ms to check if any of the buttons is pressed.
@@ -247,7 +246,6 @@ static void messageSent (void)
 void switchesCheckRunnable (void) 
 {   
 	 u8 index = 0  ;
-	 u8 message = 0;
 	 u8 switchState = 0;
 
 	if (readyForNewKey == 1) 
@@ -256,17 +254,16 @@ void switchesCheckRunnable (void)
 		{
 			switchState = HSWITCH_u32GetSwitchState(index);
 			if(switchState == SWITCH_STATUS_PRESSED )
-			{
-			    //Generating the message by adding the checksum to the message.
-                message=Encryption(index+1);
-			
-			   if(buttonPressed == 0)
-			   {
+			{   
 				// Stop responding for a new press till the current message is sent.
 			 	readyForNewKey = 0;
+
+			    //Generating the message by adding the checksum to the message.
+                message[0]=Encryption(index+1);
+			
 			    // Send the message.
-			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-			   }
+			    MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);
+
                 break ;
 			}
             

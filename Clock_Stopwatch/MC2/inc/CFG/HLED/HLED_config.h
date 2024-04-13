@@ -7,11 +7,6 @@
 typedef enum
 {
     Led_Start,          // Start of LED enumeration
-    Led_GREEN,
-    Led_RED,
-    Led_YELLOW,
-    Led_Switch,
-
     _Led_Num            // Total number of LEDs (must be last)
 } LEDS_t;
 

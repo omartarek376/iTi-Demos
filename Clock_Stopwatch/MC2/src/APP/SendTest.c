@@ -11,7 +11,7 @@ static void Dummycb (void)
 
 void sendrunnable (void)
 {
-    if (counter == 0)
+    if (counter == 2)
     {
          //switchstate[0] = HSWITCH_u32GetSwitchState(MODE_SWITCH);
     

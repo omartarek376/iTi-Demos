@@ -476,7 +476,7 @@ MUSART_enuErrorStatus MUSART_enuRecieveBufferAsync(u32 USART_ID,u8* USART_BUFFER
              RxBuffer.Buffer.Size = LENGTH;
              RxBuffer.CB = CB; 
              USART -> CR1  |= (1 << CR1_RE );     // Enable USART1 receiver (Receiver Enable)
-             USART-> CR1  |= (1 << CR1_RXNEIE ); // Enable USART1 receive interrupt (Receive Data Register Not Empty Interrupt Enable)
+             USART-> CR1   |= (1 << CR1_RXNEIE ); // Enable USART1 receive interrupt (Receive Data Register Not Empty Interrupt Enable)
         }
          else
         {

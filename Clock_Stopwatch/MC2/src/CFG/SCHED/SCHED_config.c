@@ -80,8 +80,8 @@ const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 	},
 
 	[Switch_check]= { .name = "Switch Check",
-							.periodicityMS =500,
-							.firstDelay=50,
+							.periodicityMS =30,
+							.firstDelay=200,
 							.callBackFn = switchesCheckRunnable 
 	},
 	[Clock_Runnable]= { .name = "Clock_Runnable",
@@ -96,13 +96,13 @@ const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 							.callBackFn = StopwatchRunnable
 	},
 	// [recive]= { .name = "Stopwatch_Runnable",
-	// 						.periodicityMS = 50,
-	// 						.firstDelay=1000,
+	// 						.periodicityMS = 1000,
+	// 						.firstDelay=5000,
 	// 						.callBackFn = reciverunnable
 	// },
 	// [send]= { .name = "Clock_Runnable",
-	// 						.periodicityMS = 50 ,
-	// 						.firstDelay=1000,
+	// 						.periodicityMS = 1000 ,
+	// 						.firstDelay=5000,
 	// 						.callBackFn = sendrunnable
 	// }
 };

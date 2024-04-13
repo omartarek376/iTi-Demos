@@ -109,8 +109,6 @@ MODES Mode = CLOCK_MODE;
 
 MODES previousMode = STOPWATCH_MODE;
 
-extern u8 buttonPressed ;
-
 static EDITMODES EditMode = NOT_ACTIVATED;
 
 static OKSTATE OKState = NOT_PRESSED;
@@ -130,6 +128,8 @@ static u8 printEntireScreen = TRUE;
 static u8 dayPassed = FALSE ;
 
 static u8 buttonHandled = TRUE ;
+
+u8 clockRecivedMessage [1] = {0};
 
 
 
@@ -204,8 +204,6 @@ void clockRunnable(void)
 	static u32  entryCounter  = 0;
 	static u32  LCD_Counter   = 0;
 	static u32  printCounter  = 0;
-
-	u8 RecivedMessage  = 0;
 
 	/* Variables related to the date and time. Initially We are setting them as follows */
 	static u8 hours   = 23;
@@ -689,16 +687,16 @@ void clockRunnable(void)
 		/************************************************************************************/
 
 		/* Check if the previous button request is handled and We are ready for receving a new request or not */
-		if( buttonPressed == TRUE && buttonHandled == TRUE)
+		if( buttonHandled == TRUE)
 		{
-			MUSART_enuRecieveBufferAsync(USART_1,&RecivedMessage,1,receiveCallback);	
-			buttonHandled = FALSE ;
+			MUSART_enuRecieveBufferAsync(USART_1,clockRecivedMessage,1,receiveCallback);	
+			buttonHandled = FALSE;
 		}
 		else
 		{
 			/* Do Nothing till the current request is handled */
 		}
-
+        
 		/************************************************************************************/
 		/* 	The following part checks if We received a new message (a new button press) */
 		/************************************************************************************/
@@ -710,7 +708,7 @@ void clockRunnable(void)
 			receiveFlag = FALSE;
 
 			u8 receivedButton = 0;
-			receivedButton = Decryption(RecivedMessage);
+			receivedButton = Decryption(clockRecivedMessage[0]);
 
 			/* Check whether the recevied data is correct and We can deal with its content
 				or it is corrupted so ignore it */
@@ -1163,14 +1161,12 @@ void clockRunnable(void)
 				/* After handling the latest request, raise this flag to make
 					the driver ready to receive a new button request */
 				//requestHandled = TRUE;
-				buttonPressed = FALSE ;
 				buttonHandled = TRUE;
 			}
 			else
 			{
 				/* If the data is corrupted raise this flag to make the driver ready to receive a new button request */
 				//requestHandled = TRUE;
-				buttonPressed = FALSE ;
 				buttonHandled = TRUE;
 			}
 		}

@@ -94,13 +94,13 @@ MGPIO_enuErrorStatus_t MGPIO_enuSetPinConfig (MGPIO_PIN_config_t* Add_strPinConf
         GPIO_PORT-> OTYPER =  LOC_u32OutputTypeValue;
         
 		LOC_u32SpeedValue = GPIO_PORT-> OSPEEDR ;
-		LOC_u32SpeedValue &= ~ ((GPIO_SPEED_SHIFTING_MASK)<<(GPIO_SPEED_MASK* Add_strPinConfg->GPIOPin));
-        LOC_u32SpeedValue |=   (Add_strPinConfg->GPIOSpeed<<(GPIO_SPEED_MASK* Add_strPinConfg->GPIOPin));
+		LOC_u32SpeedValue &= ~ ((GPIO_SPEED_MASK)<<(GPIO_SPEED_SHIFTING_MASK* Add_strPinConfg->GPIOPin));
+        LOC_u32SpeedValue |=   (Add_strPinConfg->GPIOSpeed<<(GPIO_SPEED_SHIFTING_MASK* Add_strPinConfg->GPIOPin));
         GPIO_PORT-> OSPEEDR = LOC_u32SpeedValue;
 
 		LOC_u32InputTypeValue = GPIO_PORT-> PUPDR;
-		LOC_u32InputTypeValue &= ~((GPIO_PUPD_SHIFTING_MASK)<<(GPIO_PUPD_MASK * Add_strPinConfg->GPIOPin));
-		LOC_u32InputTypeValue |= (Add_strPinConfg->GPIO_INPUTTYPE<<(GPIO_PUPD_MASK * Add_strPinConfg->GPIOPin));
+		LOC_u32InputTypeValue &= ~((GPIO_PUPD_MASK)<<( GPIO_PUPD_SHIFTING_MASK* Add_strPinConfg->GPIOPin));
+		LOC_u32InputTypeValue |= (Add_strPinConfg->GPIO_INPUTTYPE<<(GPIO_PUPD_SHIFTING_MASK * Add_strPinConfg->GPIOPin));
         GPIO_PORT-> PUPDR = LOC_u32InputTypeValue;
 		
 		if(Add_strPinConfg->GPIOMode == GPIO_AF)

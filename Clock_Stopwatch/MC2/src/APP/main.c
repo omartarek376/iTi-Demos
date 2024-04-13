@@ -41,14 +41,16 @@ MGPIO_PIN_config_t USART_Rx_Pin_Config = {
 };
 MGPIO_enuSetPinConfig(&USART_Tx_Pin_Config);
 MGPIO_enuSetPinConfig(&USART_Rx_Pin_Config);
+
+MUSART_enuInit();
 NVIC_EnableIRQ(IRQ_USART1);
    
-   MUSART_enuInit();
-   HLED_vLedInit();
-   LCD_enuInitAsync(DummyCB);
-   HSWITCH_vSwitchInit();
-   SCHED_init();
-   SCHED_start();   
+
+  HLED_vLedInit();
+  LCD_enuInitAsync(DummyCB);
+  HSWITCH_vSwitchInit();
+  SCHED_init();
+  SCHED_start();   
 
  
    

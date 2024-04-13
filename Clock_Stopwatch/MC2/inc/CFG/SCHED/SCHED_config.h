@@ -28,6 +28,8 @@ typedef enum
 	Switch_Debounce,
 	Clock_Runnable,
 	Stopwatch_Runnable,
+	send,
+	recive,
 
 	/* DO NOT DELETE THIS ↓↓↓, please :)*/
 	_RunnablesNumber_

@@ -59,7 +59,7 @@
  *           USART_ENABLE   
  *           USART_DISABLE  
  */
-#define  USART2_MODE                   USART_ENABLE
+#define  USART2_MODE                   USART_DISABLE 
 
 /*
  * OPTIONS :
@@ -107,7 +107,7 @@
  *           USART_ENABLE   
  *           USART_DISABLE  
  */
-#define  USART6_MODE                   USART_ENABLE
+#define  USART6_MODE                   USART_DISABLE 
 
 /*
  * OPTIONS :

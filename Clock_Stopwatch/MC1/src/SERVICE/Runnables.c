@@ -8,7 +8,7 @@ extern void RUNNABLE_LCD(void);
 extern void Clock_RunnerTask(void);
 extern void Stopwatch_RunnerTask(void);
 extern void Switch_runnable(void);
-
+extern void SW_Runnable(void);
 
 
 /*---------------------------------------------------------------------------------------------------*/
@@ -34,13 +34,20 @@ Runnable_t Runnables_Arr [_RunnableNumber]=
         .Name = "Stopwatch_runnable",
         .Periodicity = 100,
         .CB = &Stopwatch_RunnerTask,
-        .DelayMs = 1165
+        .DelayMs = 950
     },
     [Switch_Runner]=
     {
         .Name = "Switch_runnable",
-        .Periodicity = 100,
+        .Periodicity = 200,
         .CB = &Switch_runnable,
-        .DelayMs = 1020
+        .DelayMs = 901
+    },
+    [sw_runner]=
+    {
+        .Name = "sw_runner",
+        .Periodicity = 10,
+        .CB = &SW_Runnable,
+        .DelayMs = 900
     }
 };

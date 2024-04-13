@@ -2,9 +2,12 @@
 #include <stdio.h>
 #include "HAL/LCD.h"
 #include "HAL/Switch.h"
+#include "MCAL/USART.h"
 
 #define CLOCK_MODE 0
 #define STOPWATCH_MODE 1
+#define EDIT_MODE_ON 1
+#define EDIT_MODE_OFF 0
 
 #define UP_BUTTON 0B1000
 #define DOWN_BUTTON 0B1001
@@ -22,6 +25,10 @@
 #define MODE_BUTTON_STATE 5
 #define EDIT_BUTTON_STATE 6
 
+/*******************************************************************************************************************/
+/*                                                 Structures                                                      */                                 
+/*******************************************************************************************************************/
+
 typedef struct
 {
     uint16_t milliseconds;
@@ -33,26 +40,42 @@ typedef struct
     uint16_t year;
 } DateTime;
 
+
+/*******************************************************************************************************************/
+/*                                                 Function Prototypes                                             */                                 
+/*******************************************************************************************************************/
+
 int isLeapYear(int year);
 int daysInMonth(int month, int year);
 void incrementTime(DateTime *dateTime);
 void formatDate(const DateTime *dateTime, char *buffer);
 void formatTime(const DateTime *dateTime, char *buffer);
+void formatStopWatchTime(const DateTime *dateTime, char *buffer);
 void Clock_RunnerTask(void);
 void lcd_TimeStringdone(void);
 void lcd_DateStringdone(void);
 void Lcd_CursorDone(void);
-void formatStopWatchTime(const DateTime *dateTime, char *buffer);
-void lcd_StopWatchTimeStringdone(void);
 void Stopwatch_RunnerTask(void);
+uint8_t EncodeFrame(uint8_t Button);
+void Switch_runnable(void);
+void lcd_StopWatchTimeStringdone(void);
+void recieve_callback(void);
+uint8_t DecodeFrame(uint8_t frame);
+void LCD_CleanDone(void);
 
-DateTime currentDateTime = {0, 55, 59, 23, 28, 2, 2023};
+
+
+
+DateTime currentDateTime = {0, 0, 56, 1, 13, 4, 2024};
 DateTime currentstopwatchTime = {0, 0, 0, 0, 0, 0, 0};
 uint8_t Date_Counter = 0;
-uint8_t Mode = STOPWATCH_MODE;
+uint8_t Mode = CLOCK_MODE;
 uint8_t Stopwatch_Time = 0;
 uint8_t Button_Pressed = 0;
 uint8_t Button_arr[7] = {0};
+uint8_t Button_Recieved = 0;
+uint8_t Edit_Mode_Status = EDIT_MODE_OFF;
+extern USART_RXBuffer rx_button_buff;
 
 void Clock_RunnerTask(void)
 {
@@ -74,6 +97,11 @@ void Clock_RunnerTask(void)
             Date_Counter = 0;
         }
     }
+    else
+    {
+        //LCD_enuSetCursorAsync(0, 0, Lcd_CursorDone);
+        // LCD_enuClearScreenAsync(LCD_CleanDone);
+    }
 }
 
 void Stopwatch_RunnerTask(void)
@@ -89,41 +117,83 @@ void Stopwatch_RunnerTask(void)
 
 void Switch_runnable(void)
 {
-    Switch_getstatus(UP_BUTTON, &Button_arr[UP_BUTTON_STATE]);
-    Switch_getstatus(DOWN_BUTTON, &Button_arr[DOWN_BUTTON_STATE]);
-    Switch_getstatus(LEFT_BUTTON, &Button_arr[LEFT_BUTTON_STATE]);
-    Switch_getstatus(RIGHT_BUTTON, &Button_arr[RIGHT_BUTTON_STATE]);
-    Switch_getstatus(OK_BUTTON, &Button_arr[OK_BUTTON_STATE]);
-    Switch_getstatus(MODE_BUTTON, &Button_arr[MODE_BUTTON_STATE]);
-    Switch_getstatus(EDIT_BUTTON, &Button_arr[EDIT_BUTTON_STATE]);
+    uint8_t Button_Send = 0;
+    Switch_getstatus(UP_Switch, &Button_arr[UP_BUTTON_STATE]);
+    Switch_getstatus(DOWN_Switch, &Button_arr[DOWN_BUTTON_STATE]);
+    Switch_getstatus(LEFT_Switch, &Button_arr[LEFT_BUTTON_STATE]);
+    Switch_getstatus(RIGHT_Switch, &Button_arr[RIGHT_BUTTON_STATE]);
+    Switch_getstatus(OK_Switch, &Button_arr[OK_BUTTON_STATE]);
+    Switch_getstatus(MODE_Switch, &Button_arr[MODE_BUTTON_STATE]);
+    Switch_getstatus(EDIT_Switch, &Button_arr[EDIT_BUTTON_STATE]);
 
     if(Button_arr[UP_BUTTON_STATE] == 1)
     {
+        Button_Send = EncodeFrame(UP_BUTTON);
+        USART_SendByteAsynchronous(USART1,Button_Send);
         Button_arr[UP_BUTTON_STATE] = 0;
     } 
     else if(Button_arr[DOWN_BUTTON_STATE] == 1)
     {
+        Button_Send = EncodeFrame(DOWN_BUTTON);
+        USART_SendByteAsynchronous(USART1,Button_Send);
         Button_arr[DOWN_BUTTON_STATE] = 0;
     }
     else if(Button_arr[LEFT_BUTTON_STATE] == 1)
     {
+        Button_Send = EncodeFrame(LEFT_BUTTON);
+        USART_SendByteAsynchronous(USART1,Button_Send);
         Button_arr[LEFT_BUTTON_STATE] = 0;
     }
     else if(Button_arr[RIGHT_BUTTON_STATE] == 1)
     {
+        Button_Send = EncodeFrame(RIGHT_BUTTON);
+        USART_SendByteAsynchronous(USART1,Button_Send);
         Button_arr[RIGHT_BUTTON_STATE] = 0;
     }
     else if(Button_arr[OK_BUTTON_STATE] == 1)
     {
+        Button_Send = EncodeFrame(OK_BUTTON);
+        USART_SendByteAsynchronous(USART1,Button_Send);
         Button_arr[OK_BUTTON_STATE] = 0;
     }
     else if(Button_arr[MODE_BUTTON_STATE] == 1)
     {
+        Button_Send = EncodeFrame(MODE_BUTTON);
+        USART_SendByteAsynchronous(USART1,Button_Send);
         Button_arr[MODE_BUTTON_STATE] = 0;
     }
     else if(Button_arr[EDIT_BUTTON_STATE] == 1)
     {
+        Button_Send = EncodeFrame(EDIT_BUTTON);
+        USART_SendByteAsynchronous(USART1,Button_Send);
         Button_arr[EDIT_BUTTON_STATE] = 0;
+    }
+
+    switch(Button_Recieved)
+    {
+        case MODE_BUTTON:
+        Mode = !Mode;
+        LCD_enuClearScreenAsync(LCD_CleanDone);
+        Button_Recieved = 0;
+        break;
+
+        case EDIT_BUTTON:
+        Edit_Mode_Status = !Edit_Mode_Status;
+        if (Edit_Mode_Status == EDIT_MODE_ON)
+        {
+            if (Mode == CLOCK_MODE)
+            {
+                LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkOFF, Lcd_CursorDone);
+            }
+        }
+        else
+        {
+            if (Mode == CLOCK_MODE)
+            {
+                LCD_enuSendCommandAsync(LCD_DisplayON_CursorOFF_BlinkOFF, Lcd_CursorDone);
+            }
+        }
+        break;
     }
     
 }
@@ -225,4 +295,31 @@ void lcd_DateStringdone(void)
 void lcd_StopWatchTimeStringdone(void)
 {
     LCD_enuSetCursorAsync(0, 0, Lcd_CursorDone);
+}
+
+uint8_t EncodeFrame(uint8_t Button) 
+{
+    return (Button << 4) | Button;
+}
+
+uint8_t DecodeFrame(uint8_t frame) 
+{
+    uint8_t nibble1 = frame >> 4;
+    uint8_t nibble2 = frame & 0x0F;
+    return nibble1 ^ nibble2;
+}
+
+
+void recieve_callback()
+{
+    if (DecodeFrame(rx_button_buff.Data) == 0)
+    {
+        Button_Recieved = *rx_button_buff.Data >> 4;
+    }
+    USART_ReceiveBuffer(&rx_button_buff);
+}
+
+void LCD_CleanDone(void)
+{
+    // LCD_enuSetCursorAsync(0, 0, Lcd_CursorDone);
 }

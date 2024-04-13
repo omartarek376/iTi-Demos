@@ -73,6 +73,7 @@ extern LCD_strLCDPinConfig_t arrayofLCDPinConfig [7];
 typedef struct{
 	uint8_t* string;
 	uint64_t number;
+	uint8_t command;
 	uint8_t state;
 	uint8_t type;
 	uint8_t cursorLocation;
@@ -104,7 +105,8 @@ enum{
 	reqClearScreen,
 	reqSetCursor,
 	reqWriteString,
-	reqWriteNumber
+	reqWriteNumber,
+	reqWriteCommand
 };
 
 
@@ -128,11 +130,16 @@ process_t initProc;
 
 process_t writeNumProc;
 
+process_t sendCommandProc;
+
+
 
 
 /************************************************************************************/
 /*							Static Functions' Implementation						*/
 /************************************************************************************/
+
+
 
 
 /**
@@ -279,6 +286,51 @@ static void LCD_writeCommandSM(uint8_t Copy_uint8Command){
 		break;
 	}
 }
+
+static void LCD_sendCommandProc(void){
+
+#if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE)
+	static uint8_t writeCommandSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+
+#elif (LCD_DATA_BITS_MODE == LCD_EIGHT_BITS_MODE)
+	static uint8_t writeCommandSM_remainingStages = REMAINING_STAGES_8_BIT_MODE_CASE;
+
+#endif  /* #if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE) */
+
+
+#if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE)
+
+	if(writeCommandSM_remainingStages > 0){
+		LCD_writeCommandSM(userReq.command);
+		writeCommandSM_remainingStages--;
+	}
+	else{
+		/* We finished the printing of one character */
+		writeCommandSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+		userReq.type = NULL;
+		userReq.state = readyForRequest;
+		sendCommandProc.callBack();
+	}
+
+#elif (LCD_DATA_BITS_MODE == LCD_EIGHT_BITS_MODE)
+
+	if(writeCommandSM_remainingStages > 0){
+		LCD_writeCommandSM(userReq.command);
+		writeCommandSM_remainingStages--;
+	}
+	else{
+		/* We finished the printing of one character */
+		writeCommandSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+		userReq.type = NULL;
+		userReq.state = readyForRequest;
+		writeCommandProc.callBack();
+	}
+
+#endif  /* #if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE) */
+
+}
+
+
 
 
 /**
@@ -1197,6 +1249,32 @@ LCD_enuError_t LCD_enuSetCursorAsync(LCD_enuRowNumber_t row, uint8_t column, voi
 
 	return LOC_enuErrorStatus;
 }
+
+LCD_enuError_t LCD_enuSendCommandAsync(uint8_t Copy_uint8Command ,void (*callBackFn)(void)){
+	/* A local variable to assign the error state inside it and use only one return in the whole function
+	 * through returning the value of this local variable.
+	 * Initially we assume that everything is OK, if not its value will be changed according to a definite
+	 * error type */
+	LCD_enuError_t LOC_enuErrorStatus = LCD_enuOk;
+
+	/* Check on the Passed Pointer whether it is a NULL pointer or not */
+	if(callBackFn == NULL){
+		/* if the passed pointer is a NULL, return error */
+		LOC_enuErrorStatus = LCD_enuNullPointer;
+	}
+	else if ((lcdState == stateOperational) && (userReq.state == readyForRequest)){
+		sendCommandProc.callBack = callBackFn;
+		userReq.command = Copy_uint8Command;
+		userReq.type = reqWriteCommand;
+		userReq.state = busyWithRequest;
+	}
+	else{
+		/* Do Nothing */
+	}
+
+	return LOC_enuErrorStatus;
+}
+
 
 
 /**

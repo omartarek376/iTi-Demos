@@ -24,8 +24,6 @@
 /************************************************************************************/
 
 
-/* ِIncluding the .h file that contains typedefs for the primitive data types */
-#include "stdint.h"
 
 /* ِIncluding the .h file that contains all configurations */
 #include "CFG/LCD_CNF.h"
@@ -112,6 +110,37 @@
  */
 #define LCD_EightBitMode_2LineDisplay_5x10			0x3C
 
+
+/* GPIO ports */
+
+// #define GPIO_PORTA						(0)	/* 	GPIOA Base Address			*/
+// #define GPIO_PORTB						(1)	/* 	GPIOB Base Address			*/
+// #define GPIO_PORTC						(2)	/* 	GPIOC Base Address			*/
+// #define GPIO_PORTD						(3)	/* 	GPIOD Base Address			*/
+// #define GPIO_PORTE						(4)	/* 	GPIOE Base Address			*/
+// #define GPIO_PORTH						(5)	/* 	GPIOH Base Address			*/
+// /****************************************************************************************/
+
+
+// /* GPIO port's pins */
+
+// #define GPIO_PIN0						(0)
+// #define GPIO_PIN1						(1)
+// #define GPIO_PIN2						(2)
+// #define GPIO_PIN3						(3)
+// #define GPIO_PIN4						(4)
+// #define GPIO_PIN5						(5)
+// #define GPIO_PIN6						(6)
+// #define GPIO_PIN7						(7)
+// #define GPIO_PIN8						(8)
+// #define GPIO_PIN9						(9)
+// #define GPIO_PIN10						(10)
+// #define GPIO_PIN11						(11)
+// #define GPIO_PIN12						(12)
+// #define GPIO_PIN13						(13)
+// #define GPIO_PIN14						(14)
+// #define GPIO_PIN15						(15)
+// /****************************************************************************************/
 
 
 #define D0		0
@@ -420,13 +449,20 @@ LCD_enuError_t LCD_enuSetCursorAsync(LCD_enuRowNumber_t row, uint8_t column, voi
  */
 LCD_enuError_t LCD_enuWriteStringAsync(uint8_t* string, void (*callBackFn)(void));
 
-
 /**
  *@brief : Function that prints a certain number on the LCD.
  *@param : Number you want to print.
  *@return: Error State.
  */
-LCD_enuError_t LCD_enuWriteNumberAsync(uint64_t Copy_uint64Number, void (*callBackFn)(void));
+LCD_enuError_t LCD_enuWriteNumberAsync(uint64_t Copy_uint64Number, void (callBackFn)(void));
+
+
+/**
+ *@brief : Function that sends a command to the LCD.
+ *@param : A command and a callback function you want to be called after finishing your request.
+ *@return: Error State.
+ */
+LCD_enuError_t LCD_enuSendCommandAsync(uint8_t Copy_uint8Command ,void (*callBackFn)(void));
 
 
 #endif /* LCD_H_ */

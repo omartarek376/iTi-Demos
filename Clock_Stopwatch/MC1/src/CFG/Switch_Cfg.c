@@ -4,44 +4,44 @@ const Switchcfg_t Switches[_Switch_num]=
 {
     [UP_Switch]=
     {
-        .port=GPIO_PORT_A,
-        .pin=GPIO_PIN_7,
-        .connection= Switch_conn_pushdown,
+        .port=GPIO_PORT_B,
+        .pin=GPIO_PIN_5,
+        .connection= Switch_conn_pullup,
     },
     [DOWN_Switch]=
     {
-        .port=GPIO_PORT_A,
-        .pin=GPIO_PIN_8,
-        .connection= Switch_conn_pushdown,
+        .port=GPIO_PORT_B,
+        .pin=GPIO_PIN_6,
+        .connection= Switch_conn_pullup,
     },
     [LEFT_Switch]=
     {
-        .port=GPIO_PORT_A,
-        .pin=GPIO_PIN_11,
-        .connection= Switch_conn_pushdown,
+        .port=GPIO_PORT_B,
+        .pin=GPIO_PIN_7,
+        .connection= Switch_conn_pullup,
     },
     [RIGHT_Switch]=
     {
-        .port=GPIO_PORT_A,
-        .pin=GPIO_PIN_12,
-        .connection= Switch_conn_pushdown,
+        .port=GPIO_PORT_B,
+        .pin=GPIO_PIN_8,
+        .connection= Switch_conn_pullup,
     },
     [OK_Switch]=
     {
-        .port=GPIO_PORT_A,
-        .pin=GPIO_PIN_13,
-        .connection= Switch_conn_pushdown,
+        .port=GPIO_PORT_B,
+        .pin=GPIO_PIN_9,
+        .connection= Switch_conn_pullup,
     },
     [MODE_Switch]=
     {
-        .port=GPIO_PORT_C,
-        .pin=GPIO_PIN_13,
-        .connection= Switch_conn_pushdown,
+        .port=GPIO_PORT_B,
+        .pin=GPIO_PIN_10,
+        .connection= Switch_conn_pullup,
     },
     [EDIT_Switch]=
     {
-        .port=GPIO_PORT_C,
-        .pin=GPIO_PIN_14,
-        .connection= Switch_conn_pushdown,
+        .port=GPIO_PORT_B,
+        .pin=GPIO_PIN_12,
+        .connection= Switch_conn_pullup,
     }
 };

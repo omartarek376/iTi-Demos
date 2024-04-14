@@ -27,16 +27,11 @@
 /************************************************************************************/
 
 
-#define UP_SWITCH_VALUE					0x01
-#define DOWN_SWITCH_VALUE				0x02
-#define RIGHT_SWITCH_VALUE				0x03
-#define LEFT_SWITCH_VALUE				0x04
-#define OK_SWITCH_VALUE					0x05
+
 #define RESET_SWITCH_VALUE				0x06
 #define MODE_SWITCH_VALUE				0x07
 #define STOP_SWITCH_VALUE				0x08
 #define START_SWITCH_VALUE				0x09
-#define EDIT_SWITCH_VALUE				0x0A
 
 #define CORRUPTED_MESSAGE				0xFF
 
@@ -114,11 +109,13 @@ static u8 requestHandled = TRUE;
 
 static u8 printEntireScreen = TRUE;
 
-static u8 startFlag = TRUE ;
+static u8 startFlag = FALSE ;
 
 static u8 resetFlag = FALSE ;
 
 static u8 buttonHandled = TRUE ;
+
+static u8 clearOnce = FALSE ;
 
 u8 stopwatchRecivedMessage[1]  = {0};
 
@@ -133,26 +130,50 @@ u8 stopwatchRecivedMessage[1]  = {0};
  *@param : Rececived message.
  *@return: Data that is extracted from the recevied encrypted message.
  */
-static u8 Decryption(u8 value)                                                                          
-{
-	/* Extracting the Checksum bits from the received encrypted message */
-	u8 CheckSumBits = (value) & 0x0F;
-	/* Extracting the data bits from the received encrypted message */
-	u8 Data = (value >> 4);
+// static u8 Decryption(u8 value)                                                                          
+// {
+// 	/* Extracting the Checksum bits from the received encrypted message */
+// 	u8 CheckSumBits = (value) & 0x0F;
+// 	/* Extracting the data bits from the received encrypted message */
+// 	u8 Data = (value >> 4);
 
-	/* Check if the received message is correct and not corrupted */
-	if((CheckSumBits ^ value) == 0x0F)
-	{
-		/* If the received message is correct and not corrupted, return it */
-	}
-	else
-	{
-		/* If the received message is corrupted, return an info indicates that */
-		Data = CORRUPTED_MESSAGE;
-	}
-	return Data;
+// 	/* Check if the received message is correct and not corrupted */
+// 	if((CheckSumBits ^ value) == 0x0F)
+// 	{
+// 		/* If the received message is correct and not corrupted, return it */
+// 	}
+// 	else
+// 	{
+// 		/* If the received message is corrupted, return an info indicates that */
+// 		Data = CORRUPTED_MESSAGE;
+// 	}
+// 	return Data;
+// }
+
+// static u8 Decryption(u8 value) {
+//     u8 CheckSumBits = value & 0x0F;
+//     u8 Data = (value >> 4);
+
+//     /* Verify Checksum */
+//     u8 calculatedChecksum = (~Data) & 0x0F;
+//     if (CheckSumBits == calculatedChecksum) {
+//         return Data; // Return data if checksum matches
+//     } else {
+//         return CORRUPTED_MESSAGE; // Return error code for corrupted message
+//     }
+// }
+
+static u8 Decryption(u8 value) {
+    u8 CheckSumBits = value & 0x0F;
+    u8 Data = (value >> 4);
+
+    /* Verify Checksum */
+    if ((Data ^ CheckSumBits) == 0) {
+        return Data; // Return data if checksum matches
+    } else {
+        return CORRUPTED_MESSAGE; // Return error code for corrupted message
+    }
 }
-
 
 /**
  *@brief : Dummy function that passed to any Asynchronus function.
@@ -173,6 +194,7 @@ static void DummyCB(void)
 static void receiveCallback(void)
 { 
 	receiveFlag = TRUE;
+	buttonHandled = FALSE;	 
 }
 
 
@@ -195,7 +217,7 @@ void StopwatchRunnable(void)
 
 	/* Variables related to the date and time. Initially We are setting them as follows */
 	static u8 hours   = 0;
-	static u8 minutes = 9;
+	static u8 minutes = 0;
 	static u8 seconds = 0;
 	static u16 milliseconds = 0;
 
@@ -203,7 +225,7 @@ void StopwatchRunnable(void)
 	/************************************************************************************/
 	/* 			The following part updates the date and time every 1 seconds 			*/
 	/************************************************************************************/
-	if(startFlag == TRUE && entryCounter %5 == 0 && printEntireScreen == FALSE && entryCounter !=0)
+	if(startFlag == TRUE && entryCounter %5 == 0 && entryCounter !=0)
 	{ 
 		milliseconds +=100;
 
@@ -232,7 +254,7 @@ void StopwatchRunnable(void)
 		}
 
 	}
-	if(startFlag == TRUE && printEntireScreen == FALSE )
+	if(startFlag == TRUE)
 	{
 		entryCounter ++ ;
 	}
@@ -240,7 +262,18 @@ void StopwatchRunnable(void)
 	{
 		switch(printCounter)
 		{
-		case 0 :
+			case 0:
+			if(clearOnce == FALSE)
+			{
+				LCD_enuClearScreenAsync(DummyCB);
+				clearOnce = TRUE ;
+			}
+			printCounter ++ ;
+			break ;
+			case 1 :
+			printCounter ++ ;
+			break;
+		case 2 :
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync  (LCD_enuFirstRow,LCD_enuColumn_4 ,DummyCB);
@@ -251,10 +284,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 1:
+		case 3:
 			printCounter++;
 			break;
-		case 2 :
+		case 4 :
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuWriteStringAsync("STOPWATCH",DummyCB);
@@ -272,12 +305,6 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 3:
-			printCounter ++;
-			break;
-		case 4:
-			printCounter ++;
-			break;
 		case 5:
 			printCounter ++;
 			break;
@@ -285,6 +312,12 @@ void StopwatchRunnable(void)
 			printCounter ++;
 			break;
 		case 7:
+			printCounter ++;
+			break;
+		case 8:
+			printCounter ++;
+			break;
+		case 9:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_3,DummyCB);
@@ -302,10 +335,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 8:
+		case 10:
 			printCounter ++;
 			break;
-		case 9:
+		case 11:
 			if (previousMode == CLOCK_MODE)
 			{
 				if (hours < 10)
@@ -323,10 +356,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 10:
+		case 12:
 			printCounter ++;
 			break;
-		case 11:
+		case 13:
 			if (previousMode == CLOCK_MODE)
 			{
 				if(hours < 10)
@@ -351,17 +384,17 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 12:
-			printCounter ++;
-			break;
-		case 13:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			printCounter ++;
-			break;
 		case 14:
 			printCounter ++;
 			break;
 		case 15:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
+			printCounter ++;
+			break;
+		case 16:
+			printCounter ++;
+			break;
+		case 17:
 			if(milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -372,10 +405,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 16:
+		case 18:
 			printCounter ++;
 			break;
-		case 17 :
+		case 19 :
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_5,DummyCB);
@@ -393,10 +426,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 18:
+		case 20:
 			printCounter ++;
 			break;
-		case 19:
+		case 21:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuWriteStringAsync(":",DummyCB);
@@ -414,10 +447,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 20:
+		case 22:
 			printCounter ++;
 			break;
-		case 21:
+		case 23:
 			if (previousMode == CLOCK_MODE)
 			{
 				if (minutes < 10)
@@ -435,17 +468,17 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 22:
-			printCounter ++;
-			break;
-		case 23:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			printCounter ++;
-			break;
 		case 24:
 			printCounter ++;
 			break;
 		case 25:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
+			printCounter ++;
+			break;
+		case 26:
+			printCounter ++;
+			break;
+		case 27:
 			if(milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -456,10 +489,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 26:
+		case 28:
 			printCounter ++;
 			break;
-		case 27 :
+		case 29 :
 			if (previousMode == CLOCK_MODE)
 			{
 				if (minutes < 10)
@@ -477,10 +510,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 28:
+		case 30:
 			printCounter ++;
 			break;
-		case 29:
+		case 31:
 			if (previousMode == CLOCK_MODE)
 			{
 				if(minutes < 10)
@@ -505,17 +538,17 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 30:
-			printCounter ++;
-			break;
-		case 31:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			printCounter ++;
-			break;
 		case 32:
 			printCounter ++;
 			break;
 		case 33:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
+			printCounter ++;
+			break;
+		case 34:
+			printCounter ++;
+			break;
+		case 35:
 			if(milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -526,10 +559,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 34:
+		case 36:
 			printCounter ++;
 			break;
-		case 35:
+		case 37:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_8,DummyCB);
@@ -547,10 +580,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 36:
+		case 38:
 			printCounter ++;
 			break;
-		case 37:
+		case 39:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuWriteStringAsync(":",DummyCB);
@@ -568,10 +601,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 38:
+		case 40:
 			printCounter ++;
 			break;
-		case 39:
+		case 41:
 			if (previousMode == CLOCK_MODE)
 			{
 				if (seconds < 10)
@@ -589,10 +622,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 40:
+		case 42:
 			printCounter ++;
 			break;
-		case 41:
+		case 43:
 			if (previousMode == CLOCK_MODE)
 			{
 				if(seconds < 10)
@@ -617,17 +650,17 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 42:
+		case 44:
 			printCounter++;
 			break;
-		case 43:
+		case 45:
 			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			printCounter ++;
 			break;
-		case 44:
+		case 46:
 			printCounter ++;
 			break;
-		case 45:
+		case 47:
 			if(milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -638,10 +671,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 46:
+		case 48:
 			printCounter ++;
 			break;
-		case 47 :
+		case 49 :
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_11,DummyCB);
@@ -653,10 +686,10 @@ void StopwatchRunnable(void)
 			printCounter ++;
 
 			break;
-		case 48:
+		case 50:
 			printCounter ++;
 			break;
-		case 49 :
+		case 51 :
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuWriteStringAsync(":",DummyCB);
@@ -667,10 +700,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 50:
+		case 52:
 			printCounter ++;
 			break;
-		case 51:
+		case 53:
 			if (previousMode == CLOCK_MODE)
 			{
 				if(milliseconds == 0)
@@ -689,86 +722,65 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 52 :
-			printCounter ++;
-			break;
-		case 53:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			printCounter ++;
-			break;
-		case 54:
+		case 54 :
 			printCounter ++;
 			break;
 		case 55:
-			if(milliseconds == 0)
-			{
-				LCD_enuWriteStringAsync("000",DummyCB);
-			}
-			else
-			{
-				LCD_enuWriteNumberAsync(milliseconds,DummyCB);
-			}
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			printCounter ++;
 			break;
 		case 56:
 			printCounter ++;
 			break;
 		case 57:
+			if(milliseconds == 0)
+			{
+				LCD_enuWriteStringAsync("000",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(milliseconds,DummyCB);
+			}
 			printCounter ++;
 			break;
 		case 58:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			printCounter ++;
 			break;
 		case 59:
 			printCounter ++;
 			break;
 		case 60:
-			if(milliseconds == 0)
-			{
-				LCD_enuWriteStringAsync("000",DummyCB);
-			}
-			else
-			{
-				LCD_enuWriteNumberAsync(milliseconds,DummyCB);
-			}
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			printCounter ++;
 			break;
 		case 61:
 			printCounter ++;
 			break;
 		case 62:
+			if(milliseconds == 0)
+			{
+				LCD_enuWriteStringAsync("000",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(milliseconds,DummyCB);
+			}
 			printCounter ++;
 			break;
 		case 63:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			printCounter ++;
 			break;
 		case 64:
 			printCounter ++;
 			break;
 		case 65:
-			if(milliseconds == 0)
-			{
-				LCD_enuWriteStringAsync("000",DummyCB);
-			}
-			else
-			{
-				LCD_enuWriteNumberAsync(milliseconds,DummyCB);
-			}
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			printCounter ++;
 			break;
 		case 66:
 			printCounter ++;
 			break;
 		case 67:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			printCounter ++;
-			break;
-		case 68:
-			printCounter ++;
-			break;
-		case 69:
 			if(milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -779,17 +791,38 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
+		case 68:
+			printCounter ++;
+			break;
+		case 69:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
+			printCounter ++;
+			break;
 		case 70:
 			printCounter ++;
 			break;
 		case 71:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow, LCD_enuColumn_9, DummyCB);
+			if(milliseconds == 0)
+			{
+				LCD_enuWriteStringAsync("000",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(milliseconds,DummyCB);
+			}
 			printCounter ++;
 			break;
 		case 72:
 			printCounter ++;
 			break;
 		case 73:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow, LCD_enuColumn_9, DummyCB);
+			printCounter ++;
+			break;
+		case 74:
+			printCounter ++;
+			break;
+		case 75:
 			if (seconds < 10)
 			{
 				LCD_enuWriteStringAsync("0", DummyCB);
@@ -800,10 +833,10 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 74:
+		case 76:
 			printCounter ++;
 			break;
-		case 75:
+		case 77:
 			if (seconds < 10)
 			{
 				LCD_enuWriteNumberAsync(seconds, DummyCB);
@@ -814,17 +847,17 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 76:
-			printCounter ++;
-			break;
-		case 77:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			printCounter ++;
-			break;
 		case 78:
 			printCounter ++;
 			break;
 		case 79:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
+			printCounter ++;
+			break;
+		case 80:
+			printCounter ++;
+			break;
+		case 81:
 			if(milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -835,16 +868,15 @@ void StopwatchRunnable(void)
 			}
 			printCounter ++;
 			break;
-		case 80:
-			printCounter ++;
-			break;
-		case 81:
-			printCounter ++;
-			break;
 		case 82:
+			printCounter ++;
+			break;
+		case 83:
+			printCounter ++;
+			break;
+		case 84:
 			printCounter =0;
 			break;
-
 		}
 	}
 	/************************************************************************************/
@@ -858,6 +890,7 @@ void StopwatchRunnable(void)
 			switch(LCD_Counter)
 			{
 			case 0:
+				LCD_enuClearScreenAsync(DummyCB);
 				LCD_Counter++;
 				break;
 			case 1:
@@ -921,7 +954,7 @@ void StopwatchRunnable(void)
 				LCD_Counter ++ ;
 				break;
 			case 20 :
-				//LCD_enuWriteStringAsync("00:",DummyCB);
+				LCD_enuWriteStringAsync("00:",DummyCB);
 				LCD_Counter ++ ;
 				break;
 			case 21:
@@ -934,7 +967,7 @@ void StopwatchRunnable(void)
 				LCD_Counter ++ ;
 				break;
 			case 24 :
-				//LCD_enuWriteStringAsync("00:",DummyCB);
+				LCD_enuWriteStringAsync("00:",DummyCB);
 				LCD_Counter ++ ;
 				break;
 			case 25:
@@ -947,7 +980,7 @@ void StopwatchRunnable(void)
 				LCD_Counter ++ ;
 				break;
 			case 28 :
-				//LCD_enuWriteStringAsync("00:",DummyCB);
+				LCD_enuWriteStringAsync("00:",DummyCB);
 				LCD_Counter ++ ;
 				break;
 			case 29:
@@ -960,7 +993,7 @@ void StopwatchRunnable(void)
 				LCD_Counter ++ ;
 				break;
 			case 32 :
-				//LCD_enuWriteStringAsync("000",DummyCB);
+				LCD_enuWriteStringAsync("000",DummyCB);
 				LCD_Counter ++ ;
 				break;
 			case 33:
@@ -984,7 +1017,6 @@ void StopwatchRunnable(void)
 		if( buttonHandled == TRUE)
 		{
 			MUSART_enuRecieveBufferAsync(USART_1,stopwatchRecivedMessage,1,receiveCallback);	
-			 buttonHandled = FALSE;	 
 		}
 		else
 		{
@@ -1011,265 +1043,10 @@ void StopwatchRunnable(void)
 				/* Check which button the user had pressed to react upon it */
 				switch (receivedButton)
 				{
-				case UP_SWITCH_VALUE:
-					/* In case of the user entered the edit mode but still does not pressed the OK
-						button, he/she will be only able to navigate through the display */
-					if((EditMode == ACTIVATED) && (OKState == NOT_PRESSED))
-					{
-						/* If the cursor is already in the first row there is no hidden place above that :) */
-						if (CurrentRow == LCD_enuFirstRow)
-						{
-							/* Do Nothing You already on the first row */
-						}
-						else
-						{
-							/* If You are on the second row, the cursor should then go up to the first row */
-							CurrentRow = LCD_enuFirstRow;
-						}
-						LCD_enuSetCursorAsync (CurrentRow, CurrentCol, DummyCB);
-					}
-					/* In case of the user entered the edit mode and pressed the OK button, he/she will
-						be able to edit the displayed date and time */
-					else if ((EditMode == ACTIVATED) && (OKState == FIRST_PRESSED))
-					{
-						/* Calculating the position where the user is setting the cursor on to make sure
-							that he is editing only the date and time digits*/
-						CursorPos = (CurrentCol) + (CurrentRow * 16);
-
-						/* Check on the position of the cursor */
-						switch (CursorPos)
-						{
-						/* The cursor now is at the position of the Days' units */
-						case HOURS_TENS_POSITION:
-							if ((hours >= 0) && (hours <= 89))
-							{
-								hours += 10;
-							}
-							else if ((hours >= 90))
-							{
-
-							}
-							break;
-						case HOURS_UNITS_POSITION:
-							if((hours >= 0) && (hours <= 98))
-							{
-								hours++;
-							}
-							else if (hours == 99)
-							{
-								/* Do Nothing as 99 is the last hour could be displayed in the hours digits */
-							}
-							break;
-						case MINUTES_TENS_POSITION:
-							if((minutes >= 0) && (minutes <= 49))
-							{
-								minutes += 10;
-							}
-							else if (minutes > 50)
-							{
-
-							}
-							break;
-						case MINUTES_UNITS_POSITION:
-							if((minutes >= 0) && (minutes <= 58))
-							{
-								minutes++;
-							}
-							else if (minutes == 59)
-							{
-								/* Do Nothing as 59 is the last minutes could be displayed in the minutes digits */
-							}
-							break;
-						case SECONDS_TENS_POSITION:
-							if((seconds >= 0) && (seconds <= 49))
-							{
-								seconds += 10;
-							}
-							else if (seconds> 50)
-							{
-
-							}
-							break;
-						case SECONDS_UNITS_POSITION:
-							if((seconds >= 0) && (seconds <= 58))
-							{
-								seconds++;
-							}
-							else if (seconds == 59)
-							{
-								/* Do Nothing as 59 is the last seconds could be displayed in the seconds digits */
-							}
-							break;
-						case MSECONDS_HUNDREDS_POSITION:
-							if(milliseconds >= 0 && milliseconds <=800)
-							{
-								milliseconds +=100 ;
-							}
-							else
-							{
-								/* Do Nothing as 900 is the last milliseconds could be displayed in the milliseconds digits */
-							}
-							break;
-						default:   
-							/* You are in a position that you can not edit the data in it,
-								so your request is ignored*/
-							break;
-						}
-					}
-					break;
-				case DOWN_SWITCH_VALUE:
-					/* In case of the user entered the edit mode but still does not pressed the OK
-						button, he/she will be only able to navigate through the display */
-					if((EditMode == ACTIVATED) && (OKState == NOT_PRESSED))
-					{
-						/* If the cursor is already in the last row there is no hidden place under that :) */
-						if (CurrentRow == LCD_enuSecondRow)
-						{
-							/* Do Nothing You already on the last row */
-						}
-						else
-						{
-							/* If You are on the first row, the cursor should then go down to the second row */
-							CurrentRow = LCD_enuSecondRow;
-						}
-						LCD_enuSetCursorAsync (CurrentRow,CurrentCol,DummyCB);
-					}
-					else if (EditMode == ACTIVATED && OKState == FIRST_PRESSED )
-					{
-						/* Calculating the position where the user is setting the cursor on to make sure
-							that he is editing only the date and time digits*/
-						CursorPos = (CurrentCol) + (CurrentRow * 16);
-
-						/* Check on the position of the cursor */
-						switch (CursorPos)
-						{
-						case HOURS_TENS_POSITION:
-							if((hours >= 0) && (hours <= 9))
-							{
-
-							}
-							else if (hours>=10 && hours <=99)
-							{
-								hours -= 10;
-							}
-							break;
-						case HOURS_UNITS_POSITION:
-							if(hours % 10 == 0)
-							{
-
-							}
-							else
-							{
-								hours--;
-							}
-							break;
-						case MINUTES_TENS_POSITION:
-							if((minutes >= 0) && (minutes <= 9))
-							{
-
-							}
-							else
-							{
-								minutes -= 10;
-							}
-							break;
-						case MINUTES_UNITS_POSITION:
-							if((minutes % 10) == 0)
-							{
-
-							}
-							else
-							{
-								minutes--;
-							}
-							break;
-						case SECONDS_TENS_POSITION:
-							if((seconds >= 0) && (seconds <= 9))
-							{
-
-							}
-							else
-							{
-								seconds -= 10;
-							}
-							break;
-						case SECONDS_UNITS_POSITION:
-							if((seconds % 10) == 0)
-							{
-
-							}
-							else
-							{
-								seconds--;
-							}
-							break;
-						case MSECONDS_HUNDREDS_POSITION:
-							if(milliseconds == 0)
-							{
-
-							}
-							else
-							{
-								milliseconds -=100;
-							}
-							break;
-						default:
-							/* You are in a position that you can not edit the data in it,
-								so your request is ignored*/
-							break;
-						}
-					}
-					break;
-				case RIGHT_SWITCH_VALUE:
-					/* In case of the user entered the edit mode, he/she will be able to navigate through the display */
-					if(EditMode == ACTIVATED)
-					{
-						/* If the cursor is already in the last column, there is no hidden place to the right of that position :) */
-						if(CurrentCol == LCD_enuColumn_16 || CurrentCol == LCD_enuColumn_32)
-						{
-							/* Do Nothing You already on the last column */
-						}
-						else
-						{
-							/* If You are on the another column rather the last one, the cursor should
-								then go right to the next column in the same row */
-							LCD_enuSetCursorAsync(CurrentRow, (CurrentCol + 1), DummyCB);
-						}
-					}
-					break;
-				case LEFT_SWITCH_VALUE:
-					/* In case of the user entered the edit mode, he/she will be able to navigate through the display */
-					if(EditMode == ACTIVATED)
-					{
-						/* If the cursor is already in the first column, there is no hidden place to the left of that position :) */
-						if(CurrentCol == LCD_enuColumn_1 || CurrentCol == LCD_enuColumn_17)
-						{
-							/* Do Nothing You already on the first column */
-						}
-						else
-						{
-							/* If You are on the another column rather the first one, the cursor should
-								then go left to the next column in the same row */
-							LCD_enuSetCursorAsync (CurrentRow, (CurrentCol - 1), DummyCB);
-						}
-					}
-					break;
-				case OK_SWITCH_VALUE:
-					if(EditMode == ACTIVATED)
-					{
-						if (OKState == NOT_PRESSED)
-						{
-							OKState = FIRST_PRESSED;
-						}
-						else if (OKState == FIRST_PRESSED)
-						{
-							OKState = NOT_PRESSED;
-						}
-					}
-					break;
 				case MODE_SWITCH_VALUE :
 					if(EditMode == NOT_ACTIVATED)
-					{
+					{   
+
 						if (Mode == CLOCK_MODE)
 						{
 							Mode = STOPWATCH_MODE;
@@ -1279,21 +1056,12 @@ void StopwatchRunnable(void)
 						{
 							Mode = CLOCK_MODE;
 							previousMode = STOPWATCH_MODE;
+							clearOnce = FALSE ;
 						}
+						printCounter = 0;
+						LCD_Counter = 0;
 					}
 					break;
-				case EDIT_SWITCH_VALUE :
-					if(EditMode == NOT_ACTIVATED)
-					{
-						EditMode = ACTIVATED ;
-						LCD_enuSetCursorAsync  (LCD_enuFirstRow,LCD_enuColumn_1 ,DummyCB);
-					}
-					else if (EditMode == ACTIVATED)
-					{
-						EditMode = NOT_ACTIVATED ;
-					}
-					break;
-
 				case START_SWITCH_VALUE :
 					startFlag = TRUE;
 					break;
@@ -1301,9 +1069,10 @@ void StopwatchRunnable(void)
 					startFlag = FALSE;
 					break;
 				case RESET_SWITCH_VALUE :
+					LCD_enuClearScreenAsync(DummyCB);
 					resetFlag = TRUE ;
 					startFlag = FALSE;
-
+					printEntireScreen =TRUE ;
 					break;
 
 				}

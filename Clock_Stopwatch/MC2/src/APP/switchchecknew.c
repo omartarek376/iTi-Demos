@@ -14,18 +14,63 @@
 
 u8 static readyForNewKey = 1;
 u8 message[1] = {0};
+static u8 switchState = 0;
+
                                                       
-static u8 Encryption(u8 value)                                                                          
-{ 
-  u8 CheckSumBits= (~value) & 0x0F ;
-  u8 EncryptedMessage = (value << 4) | (CheckSumBits) ;
-  return EncryptedMessage;
+// static u8 Encryption(u8 value)                                                                          
+// { 
+//   u8 CheckSumBits= (~value) & 0x0F ;
+//   u8 EncryptedMessage = (value << 4) | (CheckSumBits) ;
+//   return EncryptedMessage;
+// }
+
+
+static u8 Encryption(u8 value) {
+    u8 CheckSumBits = value & 0x0F; // Only consider lower 4 bits for checksum
+    u8 EncryptedMessage = (value << 4) | (CheckSumBits);
+    return EncryptedMessage;
 }
 
 static void messageSent (void) 
 {
 	readyForNewKey = 1;
 }
+
+void switchesCheckRunnable (void) 
+{   
+	 u8 index = 0  ;
+
+
+	if (readyForNewKey == 1) 
+    {
+		for (index=0 ; index < _Switch_Num ; index ++ )
+		{
+			switchState = HSWITCH_u32GetSwitchState(index);
+			if(switchState == SWITCH_STATUS_PRESSED )
+			{   
+				// Stop responding for a new press till the current message is sent.
+			 	readyForNewKey = 0;
+
+			    //Generating the message by adding the checksum to the message.
+                message[0]=Encryption(index+1);
+			
+			    // Send the message.
+			    MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);
+
+                break ;
+			}
+            
+		}
+	}
+    else
+    {
+
+    }
+}
+
+
+
+
 
 // A runnable the comes every 100 ms to check if any of the buttons is pressed.
 // void switchesCheckRunnable (void) 
@@ -242,35 +287,3 @@ static void messageSent (void)
 // 		/* Do nothing as we are not ready for a new pressed key */	
 // 	}
 // }
-
-void switchesCheckRunnable (void) 
-{   
-	 u8 index = 0  ;
-	 u8 switchState = 0;
-
-	if (readyForNewKey == 1) 
-    {
-		for (index=0 ; index < _Switch_Num ; index ++ )
-		{
-			switchState = HSWITCH_u32GetSwitchState(index);
-			if(switchState == SWITCH_STATUS_PRESSED )
-			{   
-				// Stop responding for a new press till the current message is sent.
-			 	readyForNewKey = 0;
-
-			    //Generating the message by adding the checksum to the message.
-                message[0]=Encryption(index+1);
-			
-			    // Send the message.
-			    MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);
-
-                break ;
-			}
-            
-		}
-	}
-    else
-    {
-
-    }
-}

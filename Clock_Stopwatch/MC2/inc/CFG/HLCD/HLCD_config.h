@@ -27,7 +27,7 @@
  * Options:		LCD_FOUR_BITS_MODE
  * 		or		LCD_EIGHT_BITS_MODE						*/
 
-#define	LCD_DATA_BITS_MODE		LCD_FOUR_BITS_MODE
+#define	LCD_DATA_BITS_MODE		LCD_FOUR_BITS_MODE	
 /*****************************************************************************************/
 
 #endif /* LCD_CFG_H_ */

@@ -242,35 +242,35 @@ static void LCD_writeCommandSM(u8 Copy_uint8Command){
 		MGPIO_enuSetPinValue(arrayofLCDPinConfig[D6].LCD_port_number,\
 				arrayofLCDPinConfig[D6].LCD_pin_number,\
 				( ( Copy_uint8Command & (1<<D6) ) >> D6 ));
-		MGPIO_enuSetPinValueue(arrayofLCDPinConfig[D5].LCD_port_number,\
+		MGPIO_enuSetPinValue(arrayofLCDPinConfig[D5].LCD_port_number,\
 				arrayofLCDPinConfig[D5].LCD_pin_number,\
 				( ( Copy_uint8Command & (1<<D5) ) >> D5 ));
-		MGPIO_enuSetPinValueue(arrayofLCDPinConfig[D4].LCD_port_number,\
+		MGPIO_enuSetPinValue(arrayofLCDPinConfig[D4].LCD_port_number,\
 				arrayofLCDPinConfig[D4].LCD_pin_number,\
 				( ( Copy_uint8Command & (1<<D4) ) >> D4 ));
-		MGPIO_enuSetPinValueue(arrayofLCDPinConfig[D3].LCD_port_number,\
+		MGPIO_enuSetPinValue(arrayofLCDPinConfig[D3].LCD_port_number,\
 				arrayofLCDPinConfig[D3].LCD_pin_number,\
 				( ( Copy_uint8Command & (1<<D3) ) >> D3 ));
-		MGPIO_enuSetPinValueue(arrayofLCDPinConfig[D2].LCD_port_number,\
+		MGPIO_enuSetPinValue(arrayofLCDPinConfig[D2].LCD_port_number,\
 				arrayofLCDPinConfig[D2].LCD_pin_number,\
 				( ( Copy_uint8Command & (1<<D2) ) >> D2 ));
-		MGPIO_enuSetPinValueue(arrayofLCDPinConfig[D1].LCD_port_number,\
+		MGPIO_enuSetPinValue(arrayofLCDPinConfig[D1].LCD_port_number,\
 				arrayofLCDPinConfig[D1].LCD_pin_number,\
 				( ( Copy_uint8Command & (1<<D1) ) >> D1 ));
-		MGPIO_enuSetPinValueue(arrayofLCDPinConfig[D0].LCD_port_number,\
+		MGPIO_enuSetPinValue(arrayofLCDPinConfig[D0].LCD_port_number,\
 				arrayofLCDPinConfig[D0].LCD_pin_number,\
 				( ( Copy_uint8Command & (1<<D0) ) >> D0 ));
 		break;
 		/* Send a pulse to the E pin to send the data to the LCD */
 		/* Set the value of the E pin to be output high */
 	case 5:
-		MGPIO_enuSetPinValueue(arrayofLCDPinConfig[E_4BITMODE].LCD_port_number,\
+		MGPIO_enuSetPinValue(arrayofLCDPinConfig[E_4BITMODE].LCD_port_number,\
 				arrayofLCDPinConfig[E_4BITMODE].LCD_pin_number,\
 				GPIO_HIGH);
 		break;
 		/* Set the value of the E pin to be output low */
 	case 6:
-		MGPIO_enuSetPinValueue(arrayofLCDPinConfig[E_4BITMODE].LCD_port_number,\
+		MGPIO_enuSetPinValue(arrayofLCDPinConfig[E_4BITMODE].LCD_port_number,\
 				arrayofLCDPinConfig[E_4BITMODE].LCD_pin_number,\
 				GPIO_LOW);
 
@@ -1123,10 +1123,10 @@ static void LCD_sendCommandProc(void){
 	}
 	else{
 		/* We finished the printing of one character */
-		writeCommandSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+		writeCommandSM_remainingStages = REMAINING_STAGES_8_BIT_MODE_CASE;
 		userReq.type = NULL;
 		userReq.state = readyForRequest;
-		writeCommandProc.callBack();
+		sendCommandProc.callBack();
 	}
 
 #endif  /* #if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE) */
@@ -1172,10 +1172,10 @@ static void LCD_setCursorProc(void){
 	}
 	else{
 		/* We finished the printing of one character */
-		writeCommandSM_remainingStages = REMAINING_STAGES_4_BIT_MODE_CASE;
+		writeCommandSM_remainingStages = REMAINING_STAGES_8_BIT_MODE_CASE;
 		userReq.type = NULL;
 		userReq.state = readyForRequest;
-		clearProc.callBack();
+		setCursorProc.callBack();
 	}
 
 #endif  /* #if (LCD_DATA_BITS_MODE == LCD_FOUR_BITS_MODE) */

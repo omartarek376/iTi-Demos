@@ -129,6 +129,8 @@ static u8 dayPassed = FALSE ;
 
 static u8 buttonHandled = TRUE ;
 
+static u8 clearOnce = FALSE ;
+
 u8 clockRecivedMessage [1] = {0};
 
 
@@ -145,26 +147,50 @@ u8 clockRecivedMessage [1] = {0};
  *@param : Rececived message.
  *@return: Data that is extracted from the recevied encrypted message.
  */
-static u8 Decryption(u8 value)                                                                          
-{
-	/* Extracting the Checksum bits from the received encrypted message */
-	u8 CheckSumBits = (value) & 0x0F;
-	/* Extracting the data bits from the received encrypted message */
-	u8 Data = (value >> 4);
+// static u8 Decryption(u8 value)                                                                          
+// {
+// 	/* Extracting the Checksum bits from the received encrypted message */
+// 	u8 CheckSumBits = (value) & 0x0F;
+// 	/* Extracting the data bits from the received encrypted message */
+// 	u8 Data = (value >> 4);
 
-	/* Check if the received message is correct and not corrupted */
-	if((CheckSumBits ^ value) == 0x0F)
-	{
-		/* If the received message is correct and not corrupted, return it */
-	}
-	else
-	{
-		/* If the received message is corrupted, return an info indicates that */
-		Data = CORRUPTED_MESSAGE;
-	}
-	return Data;
+// 	/* Check if the received message is correct and not corrupted */
+// 	if((CheckSumBits ^ value) == 0x0F)
+// 	{
+// 		/* If the received message is correct and not corrupted, return it */
+// 	}
+// 	else
+// 	{
+// 		/* If the received message is corrupted, return an info indicates that */
+// 		Data = CORRUPTED_MESSAGE;
+// 	}
+// 	return Data;
+// }
+
+// static u8 Decryption(u8 value) {
+//     u8 CheckSumBits = value & 0x0F;
+//     u8 Data = (value >> 4);
+
+//     /* Verify Checksum */
+//     u8 calculatedChecksum = (~Data) & 0x0F;
+//     if (CheckSumBits == calculatedChecksum) {
+//         return Data; // Return data if checksum matches
+//     } else {
+//         return CORRUPTED_MESSAGE; // Return error code for corrupted message
+//     }
+// }
+
+static u8 Decryption(u8 value) {
+    u8 CheckSumBits = value & 0x0F;
+    u8 Data = (value >> 4);
+
+    /* Verify Checksum */
+    if ((Data ^ CheckSumBits) == 0) {
+        return Data; // Return data if checksum matches
+    } else {
+        return CORRUPTED_MESSAGE; // Return error code for corrupted message
+    }
 }
-
 
 /**
  *@brief : Dummy function that passed to any Asynchronus function.
@@ -185,6 +211,7 @@ static void DummyCB(void)
 static void receiveCallback(void)
 { 
 	receiveFlag = TRUE;
+	buttonHandled = FALSE;
 }
 
 
@@ -690,7 +717,7 @@ void clockRunnable(void)
 		if( buttonHandled == TRUE)
 		{
 			MUSART_enuRecieveBufferAsync(USART_1,clockRecivedMessage,1,receiveCallback);	
-			buttonHandled = FALSE;
+			
 		}
 		else
 		{
@@ -1129,8 +1156,9 @@ void clockRunnable(void)
 				case MODE_SWITCH_VALUE :
 					if(EditMode == NOT_ACTIVATED)
 					{
+
 						if (Mode == CLOCK_MODE)
-						{
+						{   
 							Mode = STOPWATCH_MODE;
 							previousMode = CLOCK_MODE;
 						}
@@ -1139,13 +1167,14 @@ void clockRunnable(void)
 							Mode = CLOCK_MODE;
 							previousMode = STOPWATCH_MODE;
 						}
+                        printCounter = 0;
 					}
 					break;
 				case EDIT_SWITCH_VALUE :
 					if(EditMode == NOT_ACTIVATED)
 					{
 						EditMode = ACTIVATED ;
-
+                        CursorPos = 0;
 						LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkON,DummyCB);
 
 					}

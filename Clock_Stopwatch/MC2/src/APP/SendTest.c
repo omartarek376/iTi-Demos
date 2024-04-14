@@ -2,7 +2,7 @@
 #include "HAL/HSWITCH/HSWITCH_interface.h"
 #include "MCAl/MUSART/MUSART_interface.h"
 
-u8 switchstate [1] = {1}; 
+u8 switchstate [1] = {0}; 
 static u8 counter = 0;
 static void Dummycb (void)
 {
@@ -11,16 +11,10 @@ static void Dummycb (void)
 
 void sendrunnable (void)
 {
-    if (counter == 2)
-    {
-         //switchstate[0] = HSWITCH_u32GetSwitchState(MODE_SWITCH);
-    
+         switchstate[0] = HSWITCH_u32GetSwitchState(MODE_SWITCH);
+
+         
          MUSART_enuSendBufferAsync(USART_1,switchstate,1,Dummycb);
-    }
-    else
-    {
-
-    }
-   counter ++;
-
+         switchstate[0] = 0 ;
+         
 }

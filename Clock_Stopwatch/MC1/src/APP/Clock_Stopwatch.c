@@ -87,7 +87,7 @@ void Clock_RunnerTask(void)
 
 void Stopwatch_RunnerTask(void)
 {
-    uint8_t StopWatchTimeStr[40];
+    uint8_t StopWatchTimeStr[43];
     formatStopWatchTime(&currentstopwatchTime, StopWatchTimeStr);
     switch (Stopwatch_State)
     {
@@ -140,6 +140,7 @@ void Switch_runnable(void)
         {
             if (Mode == CLOCK_MODE)
             {
+                Command_Guard = COMMAND_IN_PROGRESS;
                 LCD_enuSendCommandAsync(LCD_DisplayON_CursorOFF_BlinkON, Lcd_EditDone);
             }
         }

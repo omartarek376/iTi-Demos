@@ -1,121 +1,46 @@
-#include <stdint.h>
-#include <stdio.h>
-#include "HAL/LCD.h"
-#include "HAL/Switch.h"
-#include "MCAL/USART.h"
-
-#define CLOCK_MODE 0
-#define STOPWATCH_MODE 1
-#define EDIT_MODE_ON 1
-#define EDIT_MODE_OFF 0
-#define COMMAND_DONE 1
-#define COMMAND_IN_PROGRESS 0
-#define STOPWATCH_RUNNING 1
-#define STOPWATCH_STOPPED 0
-#define STOPWATCH_RESET 2
-#define OK_MODE_ON 1
-#define OK_MODE_OFF 0
-
-#define UP_START_BUTTON 0B1000
-#define DOWN_STOP_BUTTON 0B1001
-#define LEFT_RESET_BUTTON 0B1010
-#define RIGHT_BUTTON 0B1011
-#define OK_BUTTON 0B1100
-#define MODE_BUTTON 0B1101
-#define EDIT_BUTTON 0B1110
-
-#define UP_START_BUTTON_STATE 0
-#define DOWN_STOP_BUTTON_STATE 1
-#define LEFT_RESET_BUTTON_STATE 2
-#define RIGHT_BUTTON_STATE 3
-#define OK_BUTTON_STATE 4
-#define MODE_BUTTON_STATE 5
-#define EDIT_BUTTON_STATE 6
-#define NO_BUTTON_PRESSED 0
-
-#define CLOCK_CURSOR_START_X 0
-#define CLOCK_CURSOR_END_X 7
-#define DATE_CURSOR_START_X 0
-#define DATE_CURSOR_END_X 9
-#define CURSOR_AT_CLOCK_Y 0
-#define CURSOR_AT_DATE_Y 1
-#define HOUR_EDIT_POSITION 1
-#define MINUTE_EDIT_POSITION 4
-#define SECOND_EDIT_POSITION 7
-#define DAY_EDIT_POSITION 1
-#define MONTH_EDIT_POSITION 4
-#define YEAR_EDIT_POSITION 9
-#define DECADE_EDIT_POSITION 8
-#define CENTURY_EDIT_POSITION 7
-#define MILLENIUM_EDIT_POSITION 6
-
-/*******************************************************************************************************************/
-/*                                                 Structures                                                      */
-/*******************************************************************************************************************/
-typedef struct
-{
-    uint16_t milliseconds;
-    uint8_t seconds;
-    uint8_t minutes;
-    uint8_t hours;
-    uint8_t day;
-    uint8_t month;
-    uint16_t year;
-} DateTime;
-
-typedef struct
-{
-    int8_t X;
-    uint8_t Y;
-} Cursor;
-
-/*******************************************************************************************************************/
-/*                                                 Function Prototypes                                             */
-/*******************************************************************************************************************/
-
-int isLeapYear(int year);
-int daysInMonth(int month, int year);
-void incrementTime(DateTime *dateTime);
-void formatDate(const DateTime *dateTime, char *buffer);
-void formatTime(const DateTime *dateTime, char *buffer);
-void formatStopWatchTime(const DateTime *dateTime, char *buffer);
-void Clock_RunnerTask(void);
-void lcd_TimeStringdone(void);
-void lcd_DateStringdone(void);
-void Lcd_CursorDone(void);
-void Stopwatch_RunnerTask(void);
-uint8_t EncodeFrame(uint8_t Button);
-void Switch_runnable(void);
-void lcd_StopWatchTimeStringdone(void);
-void recieve_callback(void);
-uint8_t DecodeFrame(uint8_t frame);
-void LCD_CleanDone(void);
-void Lcd_EditDone(void);
-void Lcd_EditCursorDone(void);
-void Lcd_EditOFFDone(void);
-void Lcd_OKDone(void);
-void Lcd_EditCursorRefreshDoneTime(void);
-void Lcd_EditCursorRefreshDoneDate(void);
-void lcd_TimeStringEditdone(void);
-
+#include "Clock_Stopwatch.h"
 /*******************************************************************************************************************/
 /*                                                 Global Variable                                                 */
 /*******************************************************************************************************************/
+// Define the current date and time variables
+DateTime currentDateTime = {0, 0, 20, 4, 17, 4, 2024};  // Initialized to April 17, 2024, 20:00:00
+DateTime previousDateTime = {0, 0, 0, 0, 0, 0, 0};      // Previous date and time, initially set to zero
+DateTime currentstopwatchTime = {0, 0, 0, 0, 0, 0, 0};  // Current time for the stopwatch, initially set to zero
 
-DateTime currentDateTime = {0, 0, 20, 4, 17, 4, 2024};
-DateTime previousDateTime = {0, 0, 0, 0, 0, 0, 0};
-DateTime currentstopwatchTime = {0, 0, 0, 0, 0, 0, 0};
+// Counter for controlling display switching between date and time
 uint8_t Date_Counter = 0;
+
+// Mode variable to control the operation mode (clock mode or stopwatch mode)
 uint8_t Mode = CLOCK_MODE;
+
+// Variable to control stopwatch timing
 uint8_t Stopwatch_Time = 0;
+
+// Array to hold the status of various buttons
 uint8_t Button_arr[7] = {0};
-uint8_t Button_Recieved = NO_BUTTON_PRESSED;
+
+// Variable to store the received button value
+uint8_t Button_Received = NO_BUTTON_PRESSED;
+
+// Status variable for edit mode (ON/OFF)
 uint8_t Edit_Mode_Status = EDIT_MODE_OFF;
+
+// External declaration for the USART receive buffer
 extern USART_RXBuffer rx_button_buff;
-Cursor Edit_Cursor = {CLOCK_CURSOR_START_X, CURSOR_AT_CLOCK_Y};
+
+// Cursor structure to hold cursor position for editing
+Cursor Edit_Cursor = {CLOCK_CURSOR_START_X, CURSOR_AT_CLOCK_Y}; 
+
+// Guard variable to control the execution of commands
 uint8_t Command_Guard = COMMAND_DONE;
+
+// State variable for controlling the stopwatch (running/stopped/reset)
 uint8_t Stopwatch_State = STOPWATCH_STOPPED;
+
+// Status variable for OK mode (ON/OFF)
 uint8_t OK_Mode_Status = OK_MODE_OFF;
+
+// Buffer to hold formatted time and date strings
 uint8_t TimeStr[33];
 uint8_t DateStr[33];
 
@@ -125,27 +50,41 @@ uint8_t DateStr[33];
 
 void Clock_RunnerTask(void)
 {
+    // Increment the current time
     incrementTime(&currentDateTime);
+    
+    // Check if the mode is CLOCK_MODE, command guard is COMMAND_DONE, and edit mode is OFF
     if (Mode == CLOCK_MODE && Command_Guard == COMMAND_DONE && Edit_Mode_Status == EDIT_MODE_OFF)
     {
+        // Check if Date_Counter is 0
         if (Date_Counter == 0)
         {
+            // Check if the seconds have changed since the last update
             if (previousDateTime.seconds != currentDateTime.seconds)
             {
+                // Format the current time and update the LCD asynchronously
                 formatTime(&currentDateTime, TimeStr);
                 LCD_enuWriteStringAsync(TimeStr, lcd_TimeStringdone);
+                
+                // Update the previousDateTime to the currentDateTime
                 previousDateTime = currentDateTime;
+                
+                // Increment Date_Counter to indicate the next update should show the date
                 Date_Counter++;
             }
         }
         else
         {
+            // Format the current date and update the LCD asynchronously
             formatDate(&currentDateTime, DateStr);
             LCD_enuWriteStringAsync(DateStr, lcd_DateStringdone);
+            
+            // Reset Date_Counter to switch back to showing the time
             Date_Counter = 0;
         }
     }
 }
+
 
 void Stopwatch_RunnerTask(void)
 {
@@ -509,33 +448,48 @@ void Switch_runnable(void)
     }
 }
 
+
 /*******************************************************************************************************************/
 /*                                                 Helper Functions                                                */
 /*******************************************************************************************************************/
 
 void incrementTime(DateTime *dateTime)
 {
-    if ((dateTime->milliseconds += 200) >= 1000)
+    // Increment milliseconds by 200
+    dateTime->milliseconds += 200;
+
+    // Check if milliseconds have rolled over to a full second
+    if (dateTime->milliseconds >= 1000)
     {
-        dateTime->milliseconds -= 1000;
+        dateTime->milliseconds -= 1000; // Reset milliseconds to 0
+
+        // Increment seconds
         if (++dateTime->seconds >= 60)
         {
-            dateTime->seconds = 0;
+            dateTime->seconds = 0; // Reset seconds to 0
+
+            // Increment minutes
             if (++dateTime->minutes >= 60)
             {
-                dateTime->minutes = 0;
+                dateTime->minutes = 0; // Reset minutes to 0
+
+                // Increment hours
                 if (++dateTime->hours >= 24)
                 {
-                    dateTime->hours = 0;
+                    dateTime->hours = 0; // Reset hours to 0
+
+                    // Increment day and check for month rollover
                     dateTime->day++;
                     if (dateTime->day > daysInMonth(dateTime->month, dateTime->year))
                     {
-                        dateTime->day = 1;
-                        dateTime->month++;
+                        dateTime->day = 1; // Reset day to 1
+                        dateTime->month++; // Increment month
+
+                        // Check for year rollover
                         if (dateTime->month > 12)
                         {
-                            dateTime->month = 1;
-                            dateTime->year++;
+                            dateTime->month = 1; // Reset month to 1
+                            dateTime->year++; // Increment year
                         }
                     }
                 }
@@ -546,43 +500,55 @@ void incrementTime(DateTime *dateTime)
 
 void formatDate(const DateTime *dateTime, char *buffer)
 {
+    // Use sprintf to format the date into the buffer
     sprintf(buffer, "%02d/%02d/%04d", dateTime->day, dateTime->month, dateTime->year);
 }
 
 void formatTime(const DateTime *dateTime, char *buffer)
 {
+    // Use sprintf to format the time into the buffer
     sprintf(buffer, "%02d:%02d:%02d", dateTime->hours, dateTime->minutes, dateTime->seconds);
 }
 
 void formatStopWatchTime(const DateTime *dateTime, char *buffer)
 {
+    // Use sprintf to format the stopwatch time into the buffer
     sprintf(buffer, "%02d:%02d:%02d:%03d", dateTime->hours, dateTime->minutes, dateTime->seconds, dateTime->milliseconds);
 }
 
 int isLeapYear(int year)
 {
+    // If the year is not divisible by 4, it's not a leap year
     if (year % 4 != 0)
     {
         return 0;
     }
+    // If the year is not divisible by 100, it's a leap year
     else if (year % 100 != 0)
     {
         return 1;
     }
+    // If the year is not divisible by 400, it's not a leap year
     else if (year % 400 != 0)
     {
         return 0;
     }
+    // If the year is divisible by 400, it's a leap year
     return 1;
 }
 
 int daysInMonth(int month, int year)
 {
+    // Array storing the number of days in each month (0-based index)
     int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    // If it's February and it's a leap year, return 29 days
     if (month == 2 && isLeapYear(year))
     {
         return 29;
     }
+
+    // Return the number of days for the given month
     return days[month - 1];
 }
 
@@ -592,15 +558,19 @@ void Lcd_CursorDone(void)
 
 void lcd_TimeStringdone(void)
 {
+    // Check if Date_Counter is 1
     if (Date_Counter == 1)
     {
+        // Set the cursor position to the second line (row 1) on the LCD
         LCD_enuSetCursorAsync(1, 0, Lcd_CursorDone);
     }
     else
     {
+        // Set the cursor position to the first line (row 0) on the LCD
         LCD_enuSetCursorAsync(0, 0, Lcd_CursorDone);
     }
 }
+
 
 void lcd_DateStringdone(void)
 {

@@ -95,17 +95,7 @@ extern MODES previousMode ;
 
 static EDITMODES EditMode = NOT_ACTIVATED;
 
-static OKSTATE OKState = NOT_PRESSED;
-
-static LCD_enuRowNumber_t CurrentRow = LCD_enuFirstRow;
-
-static LCD_enuColumnNumber_t CurrentCol = LCD_enuColumn_1;
-
-static u8 CursorPos = 0;
-
 static u8 receiveFlag = FALSE;
-
-static u8 requestHandled = TRUE;
 
 static u8 printEntireScreen = TRUE;
 
@@ -118,6 +108,8 @@ static u8 buttonHandled = TRUE ;
 static u8 clearOnce = FALSE ;
 
 u8 stopwatchRecivedMessage[1]  = {0};
+
+
 
 
 /************************************************************************************/
@@ -197,6 +189,7 @@ static void receiveCallback(void)
 	buttonHandled = FALSE;	 
 }
 
+USART_Req_t StopwatchRecived_Bytes = {.length = 1, .buffer = stopwatchRecivedMessage, .USART_Peri = USART_Peri_1, .CB = receiveCallback };
 
 /************************************************************************************/
 /*								Functions' Implementation							*/
@@ -890,7 +883,6 @@ void StopwatchRunnable(void)
 			switch(LCD_Counter)
 			{
 			case 0:
-				LCD_enuClearScreenAsync(DummyCB);
 				LCD_Counter++;
 				break;
 			case 1:
@@ -900,6 +892,7 @@ void StopwatchRunnable(void)
 				LCD_Counter++;
 				break;
 			case 3:
+				LCD_enuClearScreenAsync(DummyCB);
 				LCD_Counter++;
 				break;
 			case 4:
@@ -1016,7 +1009,8 @@ void StopwatchRunnable(void)
 		/* Check if the previous button request is handled and We are ready for receving a new request or not */
 		if( buttonHandled == TRUE)
 		{
-			MUSART_enuRecieveBufferAsync(USART_1,stopwatchRecivedMessage,1,receiveCallback);	
+			//MUSART_enuRecieveBufferAsync(USART_1,stopwatchRecivedMessage,1,receiveCallback);	
+			 USART_RXBufferAsyncZC(StopwatchRecived_Bytes);
 		}
 		else
 		{
@@ -1060,6 +1054,7 @@ void StopwatchRunnable(void)
 						}
 						printCounter = 0;
 						LCD_Counter = 0;
+						stopwatchRecivedMessage[0]= 0 ; 
 					}
 					break;
 				case START_SWITCH_VALUE :

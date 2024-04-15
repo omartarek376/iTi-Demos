@@ -31,10 +31,12 @@ static u8 Encryption(u8 value) {
     return EncryptedMessage;
 }
 
-static void messageSent (void) 
+
+void messageSent (void) 
 {
 	readyForNewKey = 1;
 }
+USART_Req_t USARAT_Bytes = {.length = 1, .buffer = message, .USART_Peri = USART_Peri_1, .CB = messageSent};
 
 void switchesCheckRunnable (void) 
 {   
@@ -55,17 +57,18 @@ void switchesCheckRunnable (void)
                 message[0]=Encryption(index+1);
 			
 			    // Send the message.
-			    MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);
+			   // MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);
+			   USART_TXBufferAsyncZC(USARAT_Bytes);
 
                 break ;
 			}
             
 		}
 	}
-    else
-    {
+   else
+  {
 
-    }
+  }
 }
 
 

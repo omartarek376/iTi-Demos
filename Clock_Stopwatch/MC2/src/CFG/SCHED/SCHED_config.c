@@ -31,6 +31,7 @@ extern void StopwatchRunnable(void);
 extern void switchesCheckRunnable (void); 
 extern void reciverunnable (void);
 extern void sendrunnable (void);
+extern void recieveRunnable(void) ;
 
 
 
@@ -79,7 +80,7 @@ const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 							.callBackFn = SW_Runnable
 	},
 	[Switch_check]= { .name = "Switch Check",
-							.periodicityMS =30,
+							.periodicityMS =100,
 							.firstDelay=200,
 							.callBackFn = switchesCheckRunnable 
 	},
@@ -94,6 +95,12 @@ const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 							.firstDelay=50,
 							.callBackFn = StopwatchRunnable
 	},
+	// [Recieve_Runnable]= { .name = "Recieve_Runnable",
+	// 						.periodicityMS = 20,
+	// 						.firstDelay=200,
+	// 						.callBackFn = recieveRunnable
+	// },
+
 	// [recive]= { .name = "Stopwatch_Runnable",
 	// 						.periodicityMS =50,
 	// 						.firstDelay= 1000,

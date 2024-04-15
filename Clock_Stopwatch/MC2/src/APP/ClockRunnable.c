@@ -109,6 +109,7 @@ MODES Mode = CLOCK_MODE;
 
 MODES previousMode = STOPWATCH_MODE;
 
+
 static EDITMODES EditMode = NOT_ACTIVATED;
 
 static OKSTATE OKState = NOT_PRESSED;
@@ -121,18 +122,11 @@ static u8 CursorPos = 0;
 
 static u8 receiveFlag = FALSE;
 
-static u8 requestHandled = TRUE;
-
-static u8 printEntireScreen = TRUE;
-
 static u8 dayPassed = FALSE ;
 
 static u8 buttonHandled = TRUE ;
 
-static u8 clearOnce = FALSE ;
-
 u8 clockRecivedMessage [1] = {0};
-
 
 
 
@@ -214,6 +208,7 @@ static void receiveCallback(void)
 	buttonHandled = FALSE;
 }
 
+USART_Req_t USARATR_Bytes = {.length = 1, .buffer = clockRecivedMessage, .USART_Peri = USART_Peri_1, .CB = receiveCallback };
 
 /************************************************************************************/
 /*								Functions' Implementation							*/
@@ -716,7 +711,8 @@ void clockRunnable(void)
 		/* Check if the previous button request is handled and We are ready for receving a new request or not */
 		if( buttonHandled == TRUE)
 		{
-			MUSART_enuRecieveBufferAsync(USART_1,clockRecivedMessage,1,receiveCallback);	
+			//MUSART_enuRecieveBufferAsync(USART_1,clockRecivedMessage,1,receiveCallback);	
+			 USART_RXBufferAsyncZC(USARATR_Bytes);
 			
 		}
 		else
@@ -1168,6 +1164,9 @@ void clockRunnable(void)
 							previousMode = STOPWATCH_MODE;
 						}
                         printCounter = 0;
+						clockRecivedMessage [0] = 0;
+						//receiveFlag = 0;
+
 					}
 					break;
 				case EDIT_SWITCH_VALUE :

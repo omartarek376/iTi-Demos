@@ -429,7 +429,7 @@ MUSART_enuErrorStatus MUSART_enuSendBufferAsync(u32 USART_ID,u8* USART_BUFFER,u1
         if(TxBuffer.State == TX_STATE_READY)
         { 
              TxBuffer.Buffer.Data = USART_BUFFER;
-              TxBuffer.Buffer.Size = LENGTH;
+             TxBuffer.Buffer.Size = LENGTH;
              TxBuffer.Buffer.Pos = 0;
              TxBuffer.CB = CB;       
              TxBuffer.State = TX_STATE_BUSY;
@@ -493,6 +493,7 @@ MUSART_enuErrorStatus MUSART_enuRecieveBufferAsync(u32 USART_ID,u8* USART_BUFFER
 void USART1_IRQHandler(void)
 {   
    volatile USARTReg_t* USART1 = USART_PORTS[USART_1];
+
     if (USART1->SR & SR_TXE_MASK && TxBuffer.State == TX_STATE_BUSY)
     {
         if(TxBuffer.Buffer.Pos < TxBuffer.Buffer.Size)
@@ -512,6 +513,7 @@ void USART1_IRQHandler(void)
             TxBuffer.CB();
             }
 
+
         }
         else
         {
@@ -529,15 +531,15 @@ void USART1_IRQHandler(void)
         else if (RxBuffer.Buffer.Pos == RxBuffer.Buffer.Size-1)
         {    
              RxBuffer.Buffer.Data[RxBuffer.Buffer.Pos] = USART1 -> DR;
-             //USART1->SR &= ~(1<<SR_RXNE);        // Clear Read data register not empty
-             USART1->CR1 &= ~(1 << CR1_RXNEIE);  // Disable USART receive interrupt
+             //USART1->SR &= ~(1<<SR_RXNE);         // Clear Read data register not empty
+             USART1->CR1 &= ~(1 << CR1_RXNEIE);     // Disable USART receive interrupt
              USART1 -> CR1  &= ~(1 << CR1_RE );     // Disable USART1 receiver (Receiver Disable)
-             
              RxBuffer.State = RX_STATE_READY;
              if(RxBuffer.CB)
              {
                 RxBuffer.CB();
              }
+
         }
     }
     

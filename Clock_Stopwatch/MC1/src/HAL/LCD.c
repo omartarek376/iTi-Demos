@@ -1363,6 +1363,9 @@ void RUNNABLE_LCD(void){
 			case reqWriteNumber:
 				LCD_writeNumProc();
 				break;
+			case reqWriteCommand:
+				LCD_sendCommandProc();
+				break;
 			default:
 				/* Do Nothing */
 				break;

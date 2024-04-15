@@ -25,23 +25,23 @@ Runnable_t Runnables_Arr [_RunnableNumber]=
     [Clock_Runner]=
     {
         .Name = "Clock_runnable",
-        .Periodicity = 100,
+        .Periodicity = 200,
         .CB = &Clock_RunnerTask,
         .DelayMs = 900
     },
     [Stopwatch_Runner]=
     {
         .Name = "Stopwatch_runnable",
-        .Periodicity = 100,
+        .Periodicity = 200,
         .CB = &Stopwatch_RunnerTask,
-        .DelayMs = 950
+        .DelayMs = 1020
     },
     [Switch_Runner]=
     {
         .Name = "Switch_runnable",
         .Periodicity = 200,
         .CB = &Switch_runnable,
-        .DelayMs = 901
+        .DelayMs = 1000
     },
     [sw_runner]=
     {

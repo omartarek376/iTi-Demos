@@ -115,7 +115,7 @@ void incrementTime(DateTime *dateTime);
  * @param dateTime Pointer to the DateTime structure containing the date to be formatted.
  * @param buffer   Pointer to the character array where the formatted date string will be stored.
  */
-void formatDate(const DateTime *dateTime, char *buffer);
+void formatDate(DateTime *dateTime, char *buffer);
 
 /**
  * Formats the time stored in the DateTime structure into a string with the format "HH:MM:SS".

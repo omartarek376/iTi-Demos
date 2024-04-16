@@ -95,11 +95,11 @@ const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
 							.firstDelay=50,
 							.callBackFn = StopwatchRunnable
 	},
-	// [Recieve_Runnable]= { .name = "Recieve_Runnable",
-	// 						.periodicityMS = 20,
-	// 						.firstDelay=200,
-	// 						.callBackFn = recieveRunnable
-	// },
+	[Recieve_Runnable]= { .name = "Recieve_Runnable",
+							.periodicityMS = 200,
+							.firstDelay=200,
+							.callBackFn = recieveRunnable
+	},
 
 	// [recive]= { .name = "Stopwatch_Runnable",
 	// 						.periodicityMS =50,

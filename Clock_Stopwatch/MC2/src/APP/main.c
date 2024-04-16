@@ -32,8 +32,8 @@ int main(void)
 
 
   MGPIO_PIN_config_t USART_Tx_Pin_Config = {
-    .GPIOPort = GPIO_PORTB,                        // Assuming USART Tx pin is connected to GPIO Port A
-    .GPIOPin = GPIO_PIN6,                          // Assuming USART Tx pin is connected to pin 9
+    .GPIOPort = GPIO_PORTA,                        // Assuming USART Tx pin is connected to GPIO Port A
+    .GPIOPin = GPIO_PIN9,                          // Assuming USART Tx pin is connected to pin 9
     .GPIOMode = GPIO_AF,                           // Alternative function mode
     .GPIO_OUTPUTTYPE = GPIO_PUSHPULL,              // Push-pull output type
     .GPIO_INPUTTYPE = GPIO_NO_PULLUPPULLDOWN,      // No pull-up/pull-down
@@ -42,8 +42,8 @@ int main(void)
 };
 
 MGPIO_PIN_config_t USART_Rx_Pin_Config = {
-    .GPIOPort = GPIO_PORTB,             // Assuming USART Rx pin is connected to GPIO Port A
-    .GPIOPin = GPIO_PIN7,              // Assuming USART Rx pin is connected to pin 10
+    .GPIOPort = GPIO_PORTA,             // Assuming USART Rx pin is connected to GPIO Port A
+    .GPIOPin = GPIO_PIN10,              // Assuming USART Rx pin is connected to pin 10
     .GPIOMode = GPIO_AF,                // Alternative function mode
     .GPIO_OUTPUTTYPE = GPIO_PUSHPULL,   // Push-pull output type
     .GPIO_INPUTTYPE = GPIO_NO_PULLUPPULLDOWN,  // No pull-up/pull-down
@@ -55,7 +55,6 @@ MGPIO_enuSetPinConfig(&USART_Rx_Pin_Config);
 
 NVIC_EnableIRQ(IRQ_USART1);
 MUSART_enuInit();
-//USART_Init(USART_CFG);
 
 HLED_vLedInit();
 HSWITCH_vSwitchInit();

@@ -45,8 +45,8 @@ const Switch_CFG_t SWITCHES [_Switch_Num]=
 },
 [MODE_SWITCH]=
 {
-    .Switch_Port=GPIO_PORTA,
-    .Switch_Pin=GPIO_PIN9,
+    .Switch_Port=GPIO_PORTB,
+    .Switch_Pin=GPIO_PIN7,
     .Switch_Connection=SWITCH_CONN_PULLUP,
     //.Switch_InitStatus=SWITCH_STATUS_RELEASED,
 },

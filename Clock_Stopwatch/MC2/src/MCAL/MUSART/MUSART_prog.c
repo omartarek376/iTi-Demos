@@ -1,488 +1,546 @@
 /********************************************************************************************************/
 /************************************************Includes************************************************/
 /********************************************************************************************************/
+#include "LIB/STD_TYPES.h"
 #include "MCAL/MUSART/MUSART_interface.h"
+#include "CFG/MUSART/MUSART_config.h"
+#include "MCAL/MUSART/MUSART_priv.h"
+
+
 /********************************************************************************************************/
 /************************************************Defines*************************************************/
 /********************************************************************************************************/
 
-// #define USART_BUADRATE_MASK 0x0000FFFF
-#define USART_PERI_NUM 3
-#define USART_PERI_ENABLE 0x00002000
-#define USART_SYNC_TXE_FLAG 0x00000080
-#define USART_SYNC_RXNE_FLAG 0x00000020
-#define USART_TX_ENABLE_FLAG 0x00000008
-#define USART_TXEIE_ENABLE_FLAG 0x00000080
-#define USART_RX_ENABLE_FLAG 0x00000004
-#define USART_RXNEIE_ENABLE_FLAG 0x00000020
-#define USART_REQ_STATE_BUSY 1
-#define USART_REQ_STATE_READY 0
-#define USART_PERI_INDEX_FLAG 0x00000003
-#define USART_TX_DONE_IRQ 0x00000080
-#define USART_RX_DONE_IRQ 0x00000020
-#define USART_LBD_FLAG 0x00000100
-#define USART_REG_NUM 3
-#define USART_FRACTION_OVERFLOW_LIMIT 0x10
-#define USART_4_BIT_OFFSET 4
-#define USART_FIRST_BYTE_MASK 0x0F
-#define USART_SECOND_BYTE_MASK 0xF0
-#define USART_SR_CLEAR_MASK 0xFFFFFFFF
-#define USART_SEND_BREAK_MASK 0x00000001
+#define SR_RXNE     5
+#define SR_TXE      7 
 
+
+
+#define CR1_OVER8               15          /* 0: oversampling by 16, 1: oversampling by 8 */
+#define CR1_UE                  13
+#define CR1_M                   12          /* 0: 8 bits data, 1: 9 bits data */
+#define CR1_WAKE                11         
+#define CR1_PCE                 10
+#define CR1_PS                  9           /* 0: even parity, 1: odd parity*/
+#define CR1_PEIE                8
+#define CR1_TXIE                7
+#define CR1_TCIE                6
+#define CR1_RXNEIE              5
+#define CR1_IDLEIE              4
+#define CR1_TE                  3
+#define CR1_RE                  2
+#define CR1_RWU                 1           
+#define CR1_SBK                 0          
+
+#define BRR_DIVFRACTION                 0
+#define BRR_MANTISSA                    4
+
+#define  SR_TXE_MASK               0x80
+#define  SR_RXNE_MASK              0x20
+
+#define USART_FRACTION_OVERFLOW_LIMIT 0x10
+#define USART_SECOND_BYTE_MASK        0xF0
 /********************************************************************************************************/
 /************************************************Types***************************************************/
 /********************************************************************************************************/
-typedef struct
+typedef struct {
+ volatile    u32 SR;
+ volatile    u32 DR;
+ volatile    u32 BRR;
+ volatile    u32 CR1;
+ volatile    u32 CR2;
+ volatile    u32 CR3;
+ volatile    u32 GTPR;
+} USARTReg_t;
+
+ static USARTReg_t* const USART_PORTS[] = 
 {
-    volatile u32 SR;
-    volatile u32 DR;
-    volatile u32 BRR;
-    volatile u32 CR1;
-    volatile u32 CR2;
-    volatile u32 CR3;
-    volatile u32 GTPR;
-} USART_Peri_t;
+    (USARTReg_t*)(USART1_BASE_ADDRESS),
+    (USARTReg_t*)(USART2_BASE_ADDRESS),
+    (USARTReg_t*)(USART6_BASE_ADDRESS)
+};
 
 typedef struct
 {
-    u8 *data;
-    u32 pos;
-    u32 size;
-} buffer_t;
+    u8*  Data;
+    u32  Pos;
+    u32  Size;
+}Buffer_t;
 
 typedef struct
 {
-    buffer_t buffer;
-    u8 state;
-    CallBack_t CallBack;
-} TX_Req_t;
+    Buffer_t Buffer;
+    u32      State;
+    TxCB     CB;
+}TxBuffer_t;
 
 typedef struct
 {
-    buffer_t buffer;
-    u8 state;
-    CallBack_t CallBack;
-} RX_Req_t;
+    Buffer_t Buffer;
+    u32      State;
+    RxCB     CB;
+}RxBuffer_t;
+
+typedef enum {
+    TX_STATE_READY,
+    TX_STATE_BUSY,
+} TxState_t;
+typedef enum {
+    RX_STATE_READY,
+    RX_STATE_BUSY,
+} RxState_t;
 
 /********************************************************************************************************/
 /************************************************Variables***********************************************/
 /********************************************************************************************************/
-TX_Req_t TX_Request[USART_PERI_NUM];
-RX_Req_t RX_Request[USART_PERI_NUM];
-USART_Peri_t *USART_ADD[USART_REG_NUM] = {(USART_Peri_t *)0x40011000, (USART_Peri_t *)0x40004400, (USART_Peri_t *)0x40011400};
-CallBack_t BreakCallBack[USART_PERI_NUM];
+// Initialize TxBuffer with the state set to ready
+static TxBuffer_t TxBuffer = {
+    .Buffer = { .Data = NULL, .Pos = 0, .Size = 0 },        // Initialize buffer parameters
+    .State = TX_STATE_READY,                                // Set the state to ready
+    .CB = NULL                                              // Initialize callback function pointer
+};
+static RxBuffer_t RxBuffer = {
+    .Buffer = { .Data = NULL, .Pos = 0, .Size = 0 },       // Initialize buffer parameters
+    .State = RX_STATE_READY,                               // Set the state to ready
+    .CB = NULL                                             // Initialize callback function pointer
+};
 /********************************************************************************************************/
 /*****************************************Static Functions Prototype*************************************/
 /********************************************************************************************************/
 
+
+
 /********************************************************************************************************/
 /*********************************************APIs Implementation****************************************/
 /********************************************************************************************************/
-
-Error_Status
-USART_Init(USART_cfg_t USART_CfgArr)
+void MUSART_enuInit(void)
 {
-    Error_Status LOC_Status = Status_NOK;
-    f32 LOC_BRRValue = 0;
-    u32 LOC_CR1Value = 0;
-    u32 LOC_CR2Value = 0;
-    u16 LOC_Mantissa;
-    u16 LOC_Fraction;
-    u32 LOC_USARTDIV;
-    u32 LOC_OverSampling;
+     #if USART1_MODE == USART_ENABLE // Check if USART1 is enabled in the configuration
 
-    if (USART_CfgArr.address > USART_Peri_6 || USART_CfgArr.OverSampling > USART_OVERSAMPLING_8)
-    {
-        LOC_Status = Status_Invalid_Input;
-    }
-    else if (USART_CfgArr.ParityControl > USART_PARITY_ENABLE || USART_CfgArr.ParitySelect > USART_PARITY_ODD)
-    {
-        LOC_Status = Status_Invalid_Input;
-    }
-    else if (USART_CfgArr.StopBits > USART_STOP_BITS_2 || USART_CfgArr.WordLength > USART_WORD_LENGTH_9)
-    {
-        LOC_Status = Status_Invalid_Input;
-    }
-    else
-    {
-        LOC_Status = Status_OK;
-        // get the over sampling status 1 or 0 using the USART_OVERSAMPLING_8 value
-        LOC_OverSampling = USART_CfgArr.OverSampling / USART_OVERSAMPLING_8;
-        // calculate the USARTDIV value and multiply by 1000 to get the fraction as integer
-        LOC_USARTDIV = (((u64)USART_CLK * 1000) / (USART_CfgArr.BaudRate * (8 * (2 - LOC_OverSampling))));
+     u32  LOC_u32RegValue1 = 0; // Initialize a local variable to hold register values for USART1
+     volatile USARTReg_t* USART1 = USART_PORTS[USART_1]; // Get the pointer to USART1 registers
 
-        LOC_Mantissa = LOC_USARTDIV / 1000;
-        LOC_Fraction = (LOC_USARTDIV % 1000) * (8 * (2 - LOC_OverSampling));
+    u32 USARTDIV_1=0;    
+    u32 DIV_Mantissa_1=0;
+    u32 DIV_Fraction_1=0;
 
-        // Check if the fraction part needs rounding
-        if (LOC_Fraction % 1000 >= 500)
+// Check if the baud rate is not zero
+if (BAUD_RATE_1 != 0) {
+    // Calculate the USART divider value (USARTDIV_1) to achieve the desired baud rate
+    USARTDIV_1 = (((u64)SYSCLK_FREQUENCY * 1000) / (BAUD_RATE_1 * (8 * (2 - USART1_SAMPLING))));
+
+    // Extract the mantissa part from the USART divider
+    DIV_Mantissa_1 = USARTDIV_1 / 1000;
+
+    // Calculate the fractional part of the USART divider
+    DIV_Fraction_1 = (USARTDIV_1 % 1000) * (8 * (2 - USART1_SAMPLING));
+
+    // Check if the fractional part needs to be rounded up
+    if (DIV_Fraction_1 % 1000 >= 500) {
+        // Round up the fractional part
+        DIV_Fraction_1 = (DIV_Fraction_1 / 1000) + 1;
+    } else {
+        // Truncate the fractional part
+        DIV_Fraction_1 = DIV_Fraction_1 / 1000;
+    }
+
+    // Check if the rounded fractional part exceeds the overflow limit
+    if (DIV_Fraction_1 >= USART_FRACTION_OVERFLOW_LIMIT) {
+        // Adjust the mantissa to account for the overflow
+        DIV_Mantissa_1 += DIV_Fraction_1 & USART_SECOND_BYTE_MASK;
+    }
+}
+LOC_u32RegValue1 =  USART1 -> BRR;
+LOC_u32RegValue1 &=  USART_BRR_CLR_MASK;
+LOC_u32RegValue1 |= DIV_Mantissa_1 << BRR_MANTISSA ;
+LOC_u32RegValue1 |= DIV_Fraction_1 << BRR_DIVFRACTION  ;
+USART1 -> BRR = LOC_u32RegValue1;
+
+    // Enable USART1 and configure its control registers
+     USART1 -> CR1  |= (1 << CR1_UE );     // Enable USART1 (USART Enable)
+     //USART1 -> CR1  |= (1 << CR1_TE );     // Enable USART1 transmitter (Transmitter Enable)
+     //USART1 -> CR1  |= (1 << CR1_RE );     // Enable USART1 receiver (Receiver Enable)
+
+     
+     #if   USART1_WORD_LENGTH == USART_8Bit_WORDLENGTH 
+         USART1->CR1 &= ~(1 << CR1_M); // Set word length to 8 bits
+     #elif USART1_WORD_LENGTH == USART_9Bit_WORDLENGTH
+         USART1 -> CR1 |= (1 << CR1_M ); // Set word length to 9 bits
+     #endif
+     
+     #if  USART1_SAMPLING == USART_OVER_SAMPLING_16  
+         USART1->CR1 &= ~(1 << CR1_OVER8); // Set over-sampling ratio to 16
+     #elif USART1_SAMPLING == USART_OVER_SAMPLING_8
+         USART1 -> CR1 |= (1 << CR1_OVER8 ); // Set over-sampling ratio to 8
+     #endif
+
+     #if  USART1_PARITY  == USART_PARITY_DISABLE 
+         USART1-> CR1 &= ~(1 << CR1_PCE); // Disable parity
+     #elif USART1_PARITY  == USART_PARITY_ENABLE
+         USART1 -> CR1 |= (1 << CR1_PCE ); // Enable parity
+         if(USART1_PARITY_MODE == USART_EVEN_PARITY)
+         {
+            USART1-> CR1 &= ~(1 << CR1_PS); // Set even parity
+         }
+         else
+         {
+           USART1 -> CR1 |= (1 << CR1_PS ); // Set odd parity
+         }
+     #endif
+      
+      // Configure USART1 stop bits
+      LOC_u32RegValue1  =  USART1 -> CR2;
+      LOC_u32RegValue1 &= USART_STOPBIT_CLR_MASK;
+      LOC_u32RegValue1 |= USART1_STOP_BITS ;
+      USART1 -> CR2 = LOC_u32RegValue1;
+#endif
+
+    #if USART2_MODE == USART_ENABLE
+    // Initialize USART2 if enabled
+    u32 LOC_u32RegValue2 = 0;
+    USARTReg_t* USART2 = USART_PORTS[USART_2]; // Get the USART2 port
+
+    u32 USARTDIV_2=0;    
+    u32 DIV_Mantissa_2=0;
+    u32 DIV_Fraction_2=0;
+
+    // Check if the baud rate is not zero
+if (BAUD_RATE_2 != 0) {
+    // Calculate the USART divider value (USARTDIV_1) to achieve the desired baud rate
+    USARTDIV_2 = (((u64)SYSCLK_FREQUENCY * 1000) / (BAUD_RATE_2 * (8 * (2 - USART2_SAMPLING))));
+
+    // Extract the mantissa part from the USART divider
+    DIV_Mantissa_2 = USARTDIV_2 / 1000;
+
+    // Calculate the fractional part of the USART divider
+    DIV_Fraction_2 = (USARTDIV_2 % 1000) * (8 * (2 - USART2_SAMPLING));
+
+    // Check if the fractional part needs to be rounded up
+    if (DIV_Fraction_2 % 1000 >= 500) {
+        // Round up the fractional part
+        DIV_Fraction_2 = (DIV_Fraction_2 / 1000) + 1;
+    } else {
+        // Truncate the fractional part
+        DIV_Fraction_2 = DIV_Fraction_2 / 1000;
+    }
+
+    // Check if the rounded fractional part exceeds the overflow limit
+    if (DIV_Fraction_2 >= USART_FRACTION_OVERFLOW_LIMIT) {
+        // Adjust the mantissa to account for the overflow
+        DIV_Mantissa_2 += DIV_Fraction_2 & USART_SECOND_BYTE_MASK;
+    }
+}
+LOC_u32RegValue2 =  USART2 -> BRR;
+LOC_u32RegValue2 &=  USART_BRR_CLR_MASK;
+LOC_u32RegValue2 |= DIV_Mantissa_2 << BRR_MANTISSA ;
+LOC_u32RegValue2 |= DIV_Fraction_2 << BRR_DIVFRACTION  ;
+USART2 -> BRR = LOC_u32RegValue2;
+
+
+    // Enable USART2 and configure its control registers
+    USART2->CR1 |= (1 << CR1_UE);       // Enable USART2 (USART Enable)
+    USART2->CR1 |= (1 << CR1_TE);       // Enable USART2 transmitter (Transmitter Enable)
+    USART2->CR1 |= (1 << CR1_RE);       // Enable USART2 receiver (Receiver Enable)
+
+    // Configure USART2 word length
+    #if USART2_WORD_LENGTH == USART_8Bit_WORDLENGTH
+        USART2->CR1 &= ~(1 << CR1_M);   // Set USART2 to 8-bit data mode (Word Length = 8 bits)
+    #elif USART2_WORD_LENGTH == USART_9Bit_WORDLENGTH
+        USART2->CR1 |= (1 << CR1_M);    // Set USART2 to 9-bit data mode (Word Length = 9 bits)
+    #endif
+
+    // Configure USART2 sampling
+    #if USART2_SAMPLING == USART_OVER_SAMPLING_16
+        USART2->CR1 &= ~(1 << CR1_OVER8); // Set USART2 to oversampling by 16 (OVER8 = 0)
+    #elif USART2_SAMPLING == USART_OVER_SAMPLING_8
+        USART2->CR1 |= (1 << CR1_OVER8);  // Set USART2 to oversampling by 8 (OVER8 = 1)
+    #endif
+
+    // Configure USART2 parity
+    #if USART2_PARITY == USART_PARITY_DISABLE
+        USART2->CR1 &= ~(1 << CR1_PCE);  // Disable USART2 parity (Parity Control Enable)
+    #elif USART2_PARITY == USART_PARITY_ENABLE
+        USART2->CR1 |= (1 << CR1_PCE);   // Enable USART2 parity (Parity Control Enable)
+        if (USART2_PARITY_MODE == USART_EVEN_PARITY)
         {
-            // Round up the fraction part
-            LOC_Fraction = (LOC_Fraction / 1000) + 1;
+            USART2->CR1 &= ~(1 << CR1_PS); // Set USART2 to even parity mode (Parity Selection)
         }
         else
         {
-            LOC_Fraction = LOC_Fraction / 1000;
+            USART2->CR1 |= (1 << CR1_PS);  // Set USART2 to odd parity mode (Parity Selection)
         }
-        // check if there is any carry from the fraction
-        if (LOC_Fraction >= USART_FRACTION_OVERFLOW_LIMIT)
-        {
-            LOC_Mantissa += LOC_Fraction & USART_SECOND_BYTE_MASK;
-        }
+    #endif
 
-        LOC_BRRValue = (LOC_Mantissa << USART_4_BIT_OFFSET) | (LOC_Fraction & USART_FIRST_BYTE_MASK);
-        LOC_CR1Value = USART_PERI_ENABLE | USART_CfgArr.WordLength | USART_CfgArr.OverSampling;
-        LOC_CR1Value |= USART_CfgArr.ParityControl | USART_CfgArr.ParitySelect | USART_RX_ENABLE_FLAG | USART_TX_ENABLE_FLAG;
-        LOC_CR2Value = USART_CfgArr.StopBits;
+    // Configure USART2 stop bits
+    LOC_u32RegValue2 = USART2->CR2;
+    LOC_u32RegValue2 &= USART_STOPBIT_CLR_MASK;  // Clear the stop bits field
+    LOC_u32RegValue2 |= USART2_STOP_BITS;        // Set the stop bits field
+    USART2->CR2 = LOC_u32RegValue2;
+#endif
 
-        (USART_ADD[USART_CfgArr.address])->BRR = LOC_BRRValue;
-        (USART_ADD[USART_CfgArr.address])->CR1 = LOC_CR1Value;
-        (USART_ADD[USART_CfgArr.address])->CR2 = LOC_CR2Value;
+
+     #if USART6_MODE == USART_ENABLE
+    // Initialize USART6 if enabled
+    u32 LOC_u32RegValue6 = 0;
+    USARTReg_t* USART6 = USART_PORTS[USART_6]; // Get the USART6 port
+
+    
+    u32 USARTDIV_6=0;    
+    u32 DIV_Mantissa_6=0;
+    u32 DIV_Fraction_6=0;
+
+    // Check if the baud rate is not zero
+if (BAUD_RATE_6 != 0) {
+    // Calculate the USART divider value (USARTDIV_1) to achieve the desired baud rate
+    USARTDIV_6 = (((u64)SYSCLK_FREQUENCY * 1000) / (BAUD_RATE_6 * (8 * (2 - USART6_SAMPLING))));
+
+    // Extract the mantissa part from the USART divider
+    DIV_Mantissa_6 = USARTDIV_6 / 1000;
+
+    // Calculate the fractional part of the USART divider
+    DIV_Fraction_6 = (USARTDIV_6 % 1000) * (8 * (2 - USART6_SAMPLING));
+
+    // Check if the fractional part needs to be rounded up
+    if (DIV_Fraction_6 % 1000 >= 500) {
+        // Round up the fractional part
+        DIV_Fraction_6 = (DIV_Fraction_6 / 1000) + 1;
+    } else {
+        // Truncate the fractional part
+        DIV_Fraction_6 = DIV_Fraction_6 / 1000;
     }
 
-    return LOC_Status;
+    // Check if the rounded fractional part exceeds the overflow limit
+    if (DIV_Fraction_6 >= USART_FRACTION_OVERFLOW_LIMIT) {
+        // Adjust the mantissa to account for the overflow
+        DIV_Mantissa_6 += DIV_Fraction_6 & USART_SECOND_BYTE_MASK;
+    }
 }
+LOC_u32RegValue6 =  USART6 -> BRR;
+LOC_u32RegValue6 &=  USART_BRR_CLR_MASK;
+LOC_u32RegValue6 |= DIV_Mantissa_6 << BRR_MANTISSA ;
+LOC_u32RegValue6 |= DIV_Fraction_6 << BRR_DIVFRACTION  ;
+USART6 -> BRR = LOC_u32RegValue6;
 
-Error_Status USART_SendByte(USART_Req_t USART_Req)
-{
-    Error_Status LOC_Status = Status_NOK;
-    volatile u16 TimeOut = 3000;
+    // Enable USART6 and configure its control registers
+    USART6->CR1 |= (1 << CR1_UE);       // Enable USART6 (USART Enable)
+    USART6->CR1 |= (1 << CR1_TE);       // Enable USART6 transmitter (Transmitter Enable)
+    USART6->CR1 |= (1 << CR1_RE);       // Enable USART6 receiver (Receiver Enable)
 
-    if (USART_Req.USART_Peri > USART_Peri_6)
-    {
-        LOC_Status = Status_Null_Pointer;
-    }
-    else if (USART_Req.length > 1)
-    {
-        LOC_Status = Status_Invalid_Input;
-    }
-    else if (TX_Request[USART_Req.USART_Peri].state == USART_REQ_STATE_BUSY)
-    {
-        LOC_Status = Status_USART_Busy_Buffer;
-    }
-    else
-    {
-        LOC_Status = Status_OK;
-        TX_Request[USART_Req.USART_Peri].state = USART_REQ_STATE_BUSY;
-        (USART_ADD[USART_Req.USART_Peri])->DR = *(USART_Req.buffer);
+    // Configure USART6 word length
+    #if USART6_WORD_LENGTH == USART_8Bit_WORDLENGTH
+        USART6->CR1 &= ~(1 << CR1_M);   // Set USART6 to 8-bit data mode (Word Length = 8 bits)
+    #elif USART6_WORD_LENGTH == USART_9Bit_WORDLENGTH
+        USART6->CR1 |= (1 << CR1_M);    // Set USART6 to 9-bit data mode (Word Length = 9 bits)
+    #endif
+     
+    // Configure USART6 sampling
+    #if USART6_SAMPLING == USART_OVER_SAMPLING_16
+        USART6->CR1 &= ~(1 << CR1_OVER8); // Set USART6 to oversampling by 16 (OVER8 = 0)
+    #elif USART6_SAMPLING == USART_OVER_SAMPLING_8
+        USART6->CR1 |= (1 << CR1_OVER8);  // Set USART6 to oversampling by 8 (OVER8 = 1)
+    #endif
 
-        while (TimeOut)
+    // Configure USART6 parity
+    #if USART6_PARITY == USART_PARITY_DISABLE
+        USART6->CR1 &= ~(1 << CR1_PCE);  // Disable USART6 parity (Parity Control Enable)
+    #elif USART6_PARITY == USART_PARITY_ENABLE
+        USART6->CR1 |= (1 << CR1_PCE);   // Enable USART6 parity (Parity Control Enable)
+        if (USART6_PARITY_MODE == USART_EVEN_PARITY)
         {
-            TimeOut--;
-        }
-
-        TX_Request[USART_Req.USART_Peri].state = USART_REQ_STATE_READY;
-    }
-    return LOC_Status;
-}
-
-Error_Status USART_GetByte(USART_Req_t USART_Req)
-{
-    Error_Status LOC_Status = Status_NOK;
-    u16 TimeOut = 60000;
-
-    if (USART_Req.buffer == NULL)
-    {
-        LOC_Status = Status_Null_Pointer;
-    }
-    else if (USART_Req.USART_Peri > USART_Peri_6 || USART_Req.length > 1)
-    {
-        LOC_Status = Status_Invalid_Input;
-    }
-    else if (RX_Request[USART_Req.USART_Peri].state == USART_REQ_STATE_BUSY)
-    {
-        LOC_Status = Status_USART_Busy_Buffer;
-    }
-    {
-        LOC_Status = Status_OK;
-        RX_Request[USART_Req.USART_Peri].state = USART_REQ_STATE_BUSY;
-        while (!((USART_ADD[USART_Req.USART_Peri])->SR & USART_SYNC_RXNE_FLAG) && TimeOut)
-        {
-            TimeOut--;
-        }
-
-        if (!TimeOut)
-        {
-            LOC_Status = Status_USART_TimeOut;
+            USART6->CR1 &= ~(1 << CR1_PS); // Set USART6 to even parity mode (Parity Selection)
         }
         else
         {
-            *(USART_Req.buffer) = (USART_ADD[USART_Req.USART_Peri])->DR;
+            USART6->CR1 |= (1 << CR1_PS);  // Set USART6 to odd parity mode (Parity Selection)
         }
+    #endif
+      
+    // Configure USART6 stop bits
+    LOC_u32RegValue6 = USART6->CR2;
+    LOC_u32RegValue6 &= USART_STOPBIT_CLR_MASK;  // Clear the stop bits field
+    LOC_u32RegValue6 |= USART6_STOP_BITS;        // Set the stop bits field
+    USART6->CR2 = LOC_u32RegValue6;
 
-        RX_Request[USART_Req.USART_Peri].state = USART_REQ_STATE_BUSY;
-    }
-    return LOC_Status;
+    // Configure USART6 baud rate
+    LOC_u32RegValue6 = USART6->BRR;
+    LOC_u32RegValue6 &= USART_BRR_CLR_MASK;          // Clear the baud rate registers
+    LOC_u32RegValue6 |= DIV_Mantissa_6 << BRR_MANTISSA; // Set the mantissa part of the baud rate
+    LOC_u32RegValue6 |= DIV_Fraction_6 << BRR_DIVFRACTION; // Set the fraction part of the baud rate
+    USART6->BRR = LOC_u32RegValue6;
+#endif
+
 }
-
-Error_Status USART_TXBufferAsyncZC(USART_Req_t USART_Req)
+MUSART_enuErrorStatus MUSART_enuSendByteSync(u32 USART_ID, u8 USART_BYTE)
 {
-
-    Error_Status LOC_Status = Status_NOK;
-
-    if (USART_Req.buffer == NULL)
+    MUSART_enuErrorStatus Ret_enuUSART_ErrorStatus = MUSART_enuOK;
+    if(USART_ID != USART_1 && USART_ID != USART_2 && USART_ID != USART_6)
     {
-        LOC_Status = Status_Null_Pointer;
-    }
-    else if (TX_Request[USART_Req.USART_Peri].state == USART_REQ_STATE_BUSY)
-    {
-        LOC_Status = Status_USART_Busy_Buffer;
-    }
-    else if (USART_Req.USART_Peri > USART_Peri_6)
-    {
-        LOC_Status = Status_Invalid_Input;
+         Ret_enuUSART_ErrorStatus = MUSART_enuWRONG_UARTID;
     }
     else
     {
-        TX_Request[USART_Req.USART_Peri].buffer.data = USART_Req.buffer;
-        TX_Request[USART_Req.USART_Peri].buffer.size = USART_Req.length;
-        TX_Request[USART_Req.USART_Peri].buffer.pos = 0;
-        TX_Request[USART_Req.USART_Peri].CallBack = USART_Req.CB;
-        TX_Request[USART_Req.USART_Peri].state = USART_REQ_STATE_BUSY;
-
-        (USART_ADD[USART_Req.USART_Peri])->DR = TX_Request[USART_Req.USART_Peri].buffer.data[0];
-        TX_Request[USART_Req.USART_Peri].buffer.pos++;
-        (USART_ADD[USART_Req.USART_Peri])->CR1 |= USART_TXEIE_ENABLE_FLAG;
+       volatile USARTReg_t* USART = USART_PORTS[USART_ID]; 
+        USART->DR = USART_BYTE;
+        while(!(USART->SR & SR_TXE_MASK));  
     }
-
-    return LOC_Status;
+    
+    return Ret_enuUSART_ErrorStatus;
 }
-
-Error_Status USART_RXBufferAsyncZC(USART_Req_t USART_Req)
+MUSART_enuErrorStatus MUSART_enuRecieveByteSync(u32 USART_ID, u8* USART_BYTE)
 {
+    MUSART_enuErrorStatus Ret_enuUSART_ErrorStatus = MUSART_enuOK;
+    //u32 LOC_u32USART_INDEX = 0;
 
-    Error_Status LOC_Status = Status_NOK;
-
-    if (USART_Req.buffer == NULL)
+    if (USART_ID != USART_1 && USART_ID != USART_2 && USART_ID != USART_6)
     {
-        LOC_Status = Status_Null_Pointer;
-    }
-    else if (RX_Request[USART_Req.USART_Peri].state == USART_REQ_STATE_BUSY)
-    {
-        LOC_Status = Status_USART_Busy_Buffer;
-    }
-    else if (USART_Req.USART_Peri > USART_Peri_6)
-    {
-        LOC_Status = Status_Invalid_Input;
+        Ret_enuUSART_ErrorStatus = MUSART_enuWRONG_UARTID;
     }
     else
     {
-        RX_Request[USART_Req.USART_Peri].buffer.data = USART_Req.buffer;
-        RX_Request[USART_Req.USART_Peri].buffer.size = USART_Req.length;
-        RX_Request[USART_Req.USART_Peri].buffer.pos = 0;
-        RX_Request[USART_Req.USART_Peri].CallBack = USART_Req.CB;
-        RX_Request[USART_Req.USART_Peri].state = USART_REQ_STATE_BUSY;
+       volatile USARTReg_t* USART = USART_PORTS[USART_ID];
 
-        (USART_ADD[USART_Req.USART_Peri])->SR &= ~USART_RX_DONE_IRQ;
-        (USART_ADD[USART_Req.USART_Peri])->CR1 |= USART_RXNEIE_ENABLE_FLAG;
+        // Wait until RXNE flag is set
+        while (!(USART->SR & SR_RXNE_MASK));
+
+        // Read the received byte from the data register
+        *USART_BYTE = USART->DR;
     }
-    return LOC_Status;
+
+    return Ret_enuUSART_ErrorStatus;
 }
 
-Error_Status USART_LIN_Init(USART_LIN_cfg_t USART_LIN_CfgArr)
+MUSART_enuErrorStatus MUSART_enuSendBufferAsync(u32 USART_ID,u8* USART_BUFFER,u16 LENGTH,TxCB CB)
 {
-    Error_Status LOC_Status = Status_NOK;
-    u32 LOC_CR2Value = 0;
+    MUSART_enuErrorStatus Ret_enuUSART_ErrorStatus = MUSART_enuOK;
 
-    if (USART_LIN_CfgArr.USART_Peri > USART_Peri_6 || USART_LIN_CfgArr.LIN_Mode > USART_LIN_MODE_ENABLE)
+    // Check if USART ID is valid
+    if (USART_ID != USART_1 && USART_ID != USART_2 && USART_ID != USART_6)
     {
-        LOC_Status = Status_Invalid_Input;
+        Ret_enuUSART_ErrorStatus = MUSART_enuWRONG_UARTID;
     }
-    else if (USART_LIN_CfgArr.LIN_IRQ > USART_LIN_IRQ_ENABLE || USART_LIN_CfgArr.LIN_BreakLength > USART_LIN_BRK_LENGTH_11)
+    else if (TxBuffer.State == TX_STATE_BUSY)
     {
-        LOC_Status = Status_Invalid_Input;
+        Ret_enuUSART_ErrorStatus = TX_STATE_BUSY;
+    }
+    else if( USART_BUFFER == NULL && CB == NULL )
+    {
+        Ret_enuUSART_ErrorStatus = MUSART_enuNULL_POINTER;
     }
     else
     {
-        LOC_Status = Status_OK;
-        LOC_CR2Value = USART_LIN_CfgArr.LIN_Mode | USART_LIN_CfgArr.LIN_IRQ | USART_LIN_CfgArr.LIN_BreakLength;
-
-        (USART_ADD[USART_LIN_CfgArr.USART_Peri])->CR2 = LOC_CR2Value;
+       volatile USARTReg_t* USART = USART_PORTS[USART_ID];
+       
+             TxBuffer.Buffer.Data = USART_BUFFER;
+             TxBuffer.Buffer.Size = LENGTH;
+             TxBuffer.Buffer.Pos = 0;
+             TxBuffer.CB = CB;       
+             TxBuffer.State = TX_STATE_BUSY;
+             
+             USART -> CR1  |= (1 << CR1_TE );     // Enable USART1 transmitter (Transmitter Enable)
+             USART -> DR = TxBuffer.Buffer.Data[0];
+             TxBuffer.Buffer.Pos ++ ;
+             USART -> CR1   |= (1 << CR1_TXIE);      // Enable USART1 transmission interrupt (Transmit Interrupt Enable)
     }
-
-    return LOC_Status;
+    return Ret_enuUSART_ErrorStatus ;
 }
 
-Error_Status USART_GenerateBreak(u8 USART_Peri)
+MUSART_enuErrorStatus MUSART_enuRecieveBufferAsync(u32 USART_ID,u8* USART_BUFFER,u16 LENGTH,RxCB CB)
 {
-    Error_Status LOC_Status = Status_NOK;
+     MUSART_enuErrorStatus Ret_enuUSART_ErrorStatus = MUSART_enuOK;
 
-    if (USART_Peri > USART_Peri_6)
+    // Check if USART ID is valid
+    if (USART_ID != USART_1 && USART_ID != USART_2 && USART_ID != USART_6)
     {
-        LOC_Status = Status_Invalid_Input;
+        Ret_enuUSART_ErrorStatus = MUSART_enuWRONG_UARTID;
+    }
+    // else if (RxBuffer.State == RX_STATE_BUSY)
+    // {
+    //    Ret_enuUSART_ErrorStatus = RX_STATE_BUSY;
+    // }
+    else if (USART_BUFFER == NULL && CB == NULL)
+    {
+        Ret_enuUSART_ErrorStatus = MUSART_enuNULL_POINTER;
     }
     else
     {
-        LOC_Status = Status_OK;
-        (USART_ADD[USART_Peri])->CR1 |= USART_SEND_BREAK_MASK;
-    }
+         volatile USARTReg_t* USART = USART_PORTS[USART_ID];
+       
+       // if(RxBuffer.State == RX_STATE_READY)
+       // {    
+             //USART->SR &= ~(1 << SR_RXNE);
+             
+             RxBuffer.Buffer.Data = USART_BUFFER;
+             RxBuffer.Buffer.Size = LENGTH;
+             RxBuffer.Buffer.Pos = 0;
+             RxBuffer.CB = CB; 
+             RxBuffer.State = RX_STATE_BUSY;
 
-    return LOC_Status;
-}
+             USART -> CR1  |= (1 << CR1_RE );     // Enable USART1 receiver (Receiver Enable)
+             USART-> CR1   |= (1 << CR1_RXNEIE ); // Enable USART1 receive interrupt (Receive Data Register Not Empty Interrupt Enable)
+       // }
+       //  else
+      //  {
+             // TxBuffer is not ready for transmission
+            /// Ret_enuUSART_ErrorStatus = RX_STATE_BUSY;
+      //  }
 
-Error_Status USART_Set_BreakCallBack(u8 USART_Peri, CallBack_t CB)
-{
-    Error_Status LOC_Status = Status_NOK;
-
-    if (USART_Peri > USART_Peri_6)
-    {
-        LOC_Status = Status_Invalid_Input;
     }
-    else if (CB == NULL)
-    {
-        LOC_Status = Status_Null_Pointer;
-    }
-    else
-    {
-        LOC_Status = Status_OK;
-        BreakCallBack[USART_Peri] = CB;
-    }
-
-    return LOC_Status;
+     return Ret_enuUSART_ErrorStatus ;
 }
 
 void USART1_IRQHandler(void)
-{
-    if ((USART_ADD[USART_Peri_1])->SR & USART_LBD_FLAG)
-    {
-        if (BreakCallBack[USART_Peri_1])
-        {
-            (USART_ADD[USART_Peri_1])->SR &= ~USART_LBD_FLAG;
-            BreakCallBack[USART_Peri_1]();
-        }
-    }
+{   
+   volatile USARTReg_t* USART1 = USART_PORTS[USART_1];
 
-    if ((USART_ADD[USART_Peri_1])->SR & USART_RX_DONE_IRQ && (RX_Request[USART_Peri_1].state == USART_REQ_STATE_BUSY))
+    if (USART1->SR & SR_TXE_MASK && TxBuffer.State == TX_STATE_BUSY)
     {
-        if (RX_Request[USART_Peri_1].buffer.pos < RX_Request[USART_Peri_1].buffer.size)
-        {
-            RX_Request[USART_Peri_1].buffer.data[RX_Request[USART_Peri_1].buffer.pos] = (USART_ADD[USART_Peri_1])->DR;
-            RX_Request[USART_Peri_1].buffer.pos++;
-        }
+        if(TxBuffer.Buffer.Pos < TxBuffer.Buffer.Size)
+        {  
+               USART1->DR = TxBuffer.Buffer.Data[TxBuffer.Buffer.Pos];
+               TxBuffer.Buffer.Pos++ ;
+        } 
+        else if (TxBuffer.Buffer.Pos == TxBuffer.Buffer.Size)
+        {   
+             USART1->SR &= ~(1 << SR_TXE);       // Clear Transmit data register empty Flag
+            //USART1->CR1 &= ~(1 << CR1_TCIE);   // Disable USART transmission complete interrupt
 
-        if (RX_Request[USART_Peri_1].buffer.pos == RX_Request[USART_Peri_1].buffer.size)
-        {
-            (USART_ADD[USART_Peri_1])->CR1 &= ~USART_RXNEIE_ENABLE_FLAG;
-            RX_Request[USART_Peri_1].state = USART_REQ_STATE_READY;
-            if (RX_Request[USART_Peri_1].CallBack)
+            USART1->CR1 &= ~(1 << CR1_TXIE);    // Disable USART transmission interrupt
+            USART1 -> CR1 &= ~ (1 << CR1_TE );  // Disable USART1 transmitter (Transmitter disable)
+            TxBuffer.State = TX_STATE_READY;
+            if(TxBuffer.CB)
             {
-                RX_Request[USART_Peri_1].CallBack();
+            TxBuffer.CB();
             }
-        }
-    }
-    /*adding the second condition to ensure the tx is not executed when the receive event happens*/
-    if ((USART_ADD[USART_Peri_1])->SR & USART_TX_DONE_IRQ && (TX_Request[USART_Peri_1].state == USART_REQ_STATE_BUSY))
-    {
-        if (TX_Request[USART_Peri_1].buffer.pos < TX_Request[USART_Peri_1].buffer.size)
-        {
-            (USART_ADD[USART_Peri_1])->DR = TX_Request[USART_Peri_1].buffer.data[TX_Request[USART_Peri_1].buffer.pos];
-            TX_Request[USART_Peri_1].buffer.pos++;
+
+
         }
         else
         {
-            (USART_ADD[USART_Peri_1])->CR1 &= ~USART_TXEIE_ENABLE_FLAG;
-            TX_Request[USART_Peri_1].state = USART_REQ_STATE_READY;
 
-            if (TX_Request[USART_Peri_1].CallBack)
-            {
-                TX_Request[USART_Peri_1].CallBack();
-            }
         }
     }
-}
-
-void USART2_IRQHandler(void)
-{
-    if ((USART_ADD[USART_Peri_2])->SR & USART_LBD_FLAG)
+    
+    if(USART1->SR & SR_RXNE_MASK && RxBuffer.State == RX_STATE_BUSY)
     {
-        if (BreakCallBack[USART_Peri_2])
+        if(RxBuffer.Buffer.Pos < RxBuffer.Buffer.Size-1)
         {
-            (USART_ADD[USART_Peri_2])->SR &= ~USART_LBD_FLAG;
-            BreakCallBack[USART_Peri_2]();
+              RxBuffer.Buffer.Data[RxBuffer.Buffer.Pos] = USART1 -> DR;
+              RxBuffer.Buffer.Pos++ ;
         }
-    }
+        else if (RxBuffer.Buffer.Pos == RxBuffer.Buffer.Size-1)
+        {    
+             RxBuffer.Buffer.Data[RxBuffer.Buffer.Pos] = USART1 -> DR;
+			  // Clear the RXNE flag by reading the DR register again
+              USART1->SR &= ~(1<<SR_RXNE);         // Clear Read data register not empty
+             USART1->CR1 &= ~(1 << CR1_RXNEIE);     // Disable USART receive interrupt
+             USART1 -> CR1  &= ~(1 << CR1_RE );     // Disable USART1 receiver (Receiver Disable)
+             RxBuffer.State = RX_STATE_READY;
+             if(RxBuffer.CB)
+             {
+                RxBuffer.CB();
+             }
 
-    if ((USART_ADD[USART_Peri_2])->SR & USART_RX_DONE_IRQ && (RX_Request[USART_Peri_2].state == USART_REQ_STATE_BUSY))
-    {
-        if (RX_Request[USART_Peri_2].buffer.pos < RX_Request[USART_Peri_2].buffer.size)
-        {
-            RX_Request[USART_Peri_2].buffer.data[RX_Request[USART_Peri_2].buffer.pos] = (USART_ADD[USART_Peri_2])->DR;
-            RX_Request[USART_Peri_2].buffer.pos++;
-        }
-        if (RX_Request[USART_Peri_2].buffer.pos == RX_Request[USART_Peri_2].buffer.size)
-        {
-            (USART_ADD[USART_Peri_2])->CR1 &= ~USART_RXNEIE_ENABLE_FLAG;
-            RX_Request[USART_Peri_2].state = USART_REQ_STATE_READY;
-            if (RX_Request[USART_Peri_2].CallBack)
-            {
-                RX_Request[USART_Peri_2].CallBack();
-            }
         }
     }
-
-    if ((USART_ADD[USART_Peri_2])->SR & USART_TX_DONE_IRQ && (TX_Request[USART_Peri_2].state == USART_REQ_STATE_BUSY))
-    {
-        if (TX_Request[USART_Peri_2].buffer.pos < TX_Request[USART_Peri_2].buffer.size)
-        {
-            (USART_ADD[USART_Peri_2])->DR = TX_Request[USART_Peri_2].buffer.data[TX_Request[USART_Peri_2].buffer.pos];
-            TX_Request[USART_Peri_2].buffer.pos++;
-        }
-        else
-        {
-            (USART_ADD[USART_Peri_2])->CR1 &= ~USART_TXEIE_ENABLE_FLAG;
-            TX_Request[USART_Peri_2].state = USART_REQ_STATE_READY;
-            if (TX_Request[USART_Peri_2].CallBack)
-            {
-                TX_Request[USART_Peri_2].CallBack();
-            }
-        }
-    }
-}
-
-void USART6_IRQHandler(void)
-{
-    if ((USART_ADD[USART_Peri_6])->SR & USART_LBD_FLAG)
-    {
-        if (BreakCallBack[USART_Peri_6])
-        {
-            (USART_ADD[USART_Peri_6])->SR &= ~USART_LBD_FLAG;
-            BreakCallBack[USART_Peri_6]();
-        }
-    }
-
-    if ((USART_ADD[USART_Peri_6])->SR & USART_RX_DONE_IRQ && (TX_Request[USART_Peri_6].state == USART_REQ_STATE_BUSY))
-    {
-        if (RX_Request[USART_Peri_6].buffer.pos < RX_Request[USART_Peri_6].buffer.size)
-        {
-            RX_Request[USART_Peri_6].buffer.data[RX_Request[USART_Peri_6].buffer.pos] = (USART_ADD[USART_Peri_6])->DR;
-            RX_Request[USART_Peri_6].buffer.pos++;
-        }
-        if (RX_Request[USART_Peri_6].buffer.pos == RX_Request[USART_Peri_6].buffer.size)
-        {
-            (USART_ADD[USART_Peri_6])->CR1 &= ~USART_RXNEIE_ENABLE_FLAG;
-            RX_Request[USART_Peri_6].state = USART_REQ_STATE_READY;
-            if (RX_Request[USART_Peri_6].CallBack)
-            {
-                RX_Request[USART_Peri_6].CallBack();
-            }
-        }
-    }
-
-    if ((USART_ADD[USART_Peri_6])->SR & USART_TX_DONE_IRQ && (TX_Request[USART_Peri_6].state == USART_REQ_STATE_BUSY))
-    {
-        if (TX_Request[USART_Peri_6].buffer.pos < TX_Request[USART_Peri_6].buffer.size)
-        {
-            (USART_ADD[USART_Peri_6])->DR = TX_Request[USART_Peri_6].buffer.data[TX_Request[USART_Peri_6].buffer.pos];
-            TX_Request[USART_Peri_6].buffer.pos++;
-        }
-        else
-        {
-            (USART_ADD[USART_Peri_6])->CR1 &= ~USART_TXEIE_ENABLE_FLAG;
-            TX_Request[USART_Peri_6].state = USART_REQ_STATE_READY;
-            if (TX_Request[USART_Peri_6].CallBack)
-            {
-                TX_Request[USART_Peri_6].CallBack();
-            }
-        }
-    }
+    
 }

@@ -38,10 +38,10 @@
 #define HOURS_TENS_POSITION				  18
 #define HOURS_UNITS_POSITION			  19
 #define MINUTES_TENS_POSITION			  21
-#define MINUTES_UNITS_POSITION		  22
+#define MINUTES_UNITS_POSITION		      22
 #define SECONDS_TENS_POSITION			  24
-#define SECONDS_UNITS_POSITION		  25
-#define MSECONDS_HUNDREDS_POSITION	27
+#define SECONDS_UNITS_POSITION		      25
+#define MSECONDS_HUNDREDS_POSITION	      27
 
 /************************************************************************************/
 /*							User-defined types Declaration							*/
@@ -108,8 +108,6 @@ static u8 buttonHandled = TRUE ;
 static u8 clearOnce = FALSE ;
 
 u8 stopwatchRecivedMessage[1]  = {0};
-
-
 
 
 /************************************************************************************/
@@ -189,7 +187,7 @@ static void receiveCallback(void)
 	buttonHandled = FALSE;	 
 }
 
-USART_Req_t StopwatchRecived_Bytes = {.length = 1, .buffer = stopwatchRecivedMessage, .USART_Peri = USART_Peri_1, .CB = receiveCallback };
+//USART_Req_t StopwatchRecived_Bytes = {.length = 1, .buffer = stopwatchRecivedMessage, .USART_Peri = USART_Peri_1, .CB = receiveCallback };
 
 /************************************************************************************/
 /*								Functions' Implementation							*/
@@ -1009,8 +1007,8 @@ void StopwatchRunnable(void)
 		/* Check if the previous button request is handled and We are ready for receving a new request or not */
 		if( buttonHandled == TRUE)
 		{
-			//MUSART_enuRecieveBufferAsync(USART_1,stopwatchRecivedMessage,1,receiveCallback);	
-			 USART_RXBufferAsyncZC(StopwatchRecived_Bytes);
+			MUSART_enuRecieveBufferAsync(USART_1,stopwatchRecivedMessage,1,receiveCallback);	
+			 //USART_RXBufferAsyncZC(StopwatchRecived_Bytes);
 		}
 		else
 		{
@@ -1041,17 +1039,17 @@ void StopwatchRunnable(void)
 					if(EditMode == NOT_ACTIVATED)
 					{   
 
-						if (Mode == CLOCK_MODE)
-						{
-							Mode = STOPWATCH_MODE;
-							previousMode = CLOCK_MODE;
-						}
-						else if (Mode == STOPWATCH_MODE)
-						{
+						// if (Mode == CLOCK_MODE)
+						// {
+						// 	Mode = STOPWATCH_MODE;
+						// 	previousMode = CLOCK_MODE;
+						// }
+						// else if (Mode == STOPWATCH_MODE)
+						// {
 							Mode = CLOCK_MODE;
 							previousMode = STOPWATCH_MODE;
 							clearOnce = FALSE ;
-						}
+						// }
 						printCounter = 0;
 						LCD_Counter = 0;
 						stopwatchRecivedMessage[0]= 0 ; 
@@ -1062,12 +1060,19 @@ void StopwatchRunnable(void)
 					break;
 				case STOP_SWITCH_VALUE :
 					startFlag = FALSE;
+					printCounter = 0;
 					break;
 				case RESET_SWITCH_VALUE :
 					LCD_enuClearScreenAsync(DummyCB);
 					resetFlag = TRUE ;
 					startFlag = FALSE;
 					printEntireScreen =TRUE ;
+					LCD_Counter  = 0;
+					printCounter = 0;
+					hours   = 0;
+					minutes = 0;
+					seconds = 0;
+					milliseconds = 0;
 					break;
 
 				}

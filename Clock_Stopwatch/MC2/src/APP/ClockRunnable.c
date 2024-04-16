@@ -126,10 +126,11 @@ static u8 dayPassed = FALSE ;
 
 static u8 buttonHandled = TRUE ;
 
+static u8 setCursprNeedded = FALSE ;
+
+static u8 ignoreFlag = FALSE ;
+
 u8 clockRecivedMessage [1] = {0};
-
-
-
 
 /************************************************************************************/
 /*							Static Functions' Implementation						*/
@@ -208,7 +209,7 @@ static void receiveCallback(void)
 	buttonHandled = FALSE;
 }
 
-USART_Req_t USARATR_Bytes = {.length = 1, .buffer = clockRecivedMessage, .USART_Peri = USART_Peri_1, .CB = receiveCallback };
+//USART_Req_t USARATR_Bytes = {.length = 1, .buffer = clockRecivedMessage, .USART_Peri = USART_Peri_1, .CB = receiveCallback };
 
 /************************************************************************************/
 /*								Functions' Implementation							*/
@@ -298,7 +299,9 @@ void clockRunnable(void)
 		display Date and Time after each update */
 	/************************************************************************************/
 	if(Mode == CLOCK_MODE )
-	{
+	{   
+		if(EditMode == NOT_ACTIVATED)
+		{
 		switch(printCounter)
 		{
 
@@ -702,6 +705,37 @@ void clockRunnable(void)
 			printCounter = 0;
 			break;
 		}
+		}
+		else
+		{
+			u8 static editModeCounter=0 ;
+			switch (editModeCounter)
+			{
+				case 0:
+				editModeCounter ++ ;
+				break;
+				case 1:
+				editModeCounter ++ ;
+				break;
+				case 2:
+				if(setCursprNeedded == TRUE)
+				{
+ 				LCD_enuSetCursorAsync (LCD_enuFirstRow,LCD_enuColumn_7,DummyCB);
+				setCursprNeedded = FALSE ;
+				}
+				else 
+				{
+
+				}
+				editModeCounter ++;
+				break;
+				case 3:
+				editModeCounter ++ ;
+				break;
+				case 4:
+				editModeCounter = 0 ;
+			}
+		}
 
 		/************************************************************************************/
 		/* 	The following part checks if We are ready for receiving a new button request or
@@ -711,8 +745,8 @@ void clockRunnable(void)
 		/* Check if the previous button request is handled and We are ready for receving a new request or not */
 		if( buttonHandled == TRUE)
 		{
-			//MUSART_enuRecieveBufferAsync(USART_1,clockRecivedMessage,1,receiveCallback);	
-			 USART_RXBufferAsyncZC(USARATR_Bytes);
+			MUSART_enuRecieveBufferAsync(USART_1,clockRecivedMessage,1,receiveCallback);	
+			// USART_RXBufferAsyncZC(USARATR_Bytes);
 			
 		}
 		else
@@ -737,10 +771,15 @@ void clockRunnable(void)
 				or it is corrupted so ignore it */
 			if(receivedButton != 0xFF)
 			{
+				if(ignoreFlag == FALSE)
+				{
 				/* Check which button the user had pressed to react upon it */
 				switch (receivedButton)
 				{
 				case UP_SWITCH_VALUE:
+				if(ignoreFlag == FALSE)
+				{   
+					ignoreFlag = TRUE;
 					/* In case of the user entered the edit mode but still does not pressed the OK
 						button, he/she will be only able to navigate through the display */
 					if((EditMode == ACTIVATED) && (OKState == NOT_PRESSED))
@@ -925,8 +964,12 @@ void clockRunnable(void)
 							break;
 						}
 					}
+				}
 					break;
 				case DOWN_SWITCH_VALUE:
+				if(ignoreFlag == FALSE)
+				{   
+					ignoreFlag = TRUE;
 					/* In case of the user entered the edit mode but still does not pressed the OK
 						button, he/she will be only able to navigate through the display */
 					if((EditMode == ACTIVATED) && (OKState == NOT_PRESSED))
@@ -1101,8 +1144,12 @@ void clockRunnable(void)
 							break;
 						}
 					}
+				}
 					break;
 				case RIGHT_SWITCH_VALUE:
+				if(ignoreFlag == FALSE)
+				{   
+					ignoreFlag = TRUE;
 					/* In case of the user entered the edit mode, he/she will be able to navigate through the display */
 					if(EditMode == ACTIVATED)
 					{
@@ -1115,11 +1162,16 @@ void clockRunnable(void)
 						{
 							/* If You are on the another column rather the last one, the cursor should
 								then go right to the next column in the same row */
-							LCD_enuSetCursorAsync(CurrentRow, (CurrentCol + 1), DummyCB);
+								CurrentCol ++ ;
+							LCD_enuSetCursorAsync(CurrentRow, CurrentCol, DummyCB);
 						}
 					}
+				}
 					break;
 				case LEFT_SWITCH_VALUE:
+				if(ignoreFlag == FALSE)
+				{   
+					ignoreFlag = TRUE;
 					/* In case of the user entered the edit mode, he/she will be able to navigate through the display */
 					if(EditMode == ACTIVATED)
 					{
@@ -1132,49 +1184,67 @@ void clockRunnable(void)
 						{
 							/* If You are on the another column rather the first one, the cursor should
 								then go left to the next column in the same row */
-							LCD_enuSetCursorAsync (CurrentRow, (CurrentCol - 1), DummyCB);
+								CurrentCol -- ;
+							LCD_enuSetCursorAsync (CurrentRow, CurrentCol, DummyCB);
 						}
 					}
+				}
 					break;
 				case OK_SWITCH_VALUE:
+				if(ignoreFlag == FALSE)
+				{   
+					ignoreFlag = TRUE;
 					if(EditMode == ACTIVATED)
 					{
 						if (OKState == NOT_PRESSED)
 						{
 							OKState = FIRST_PRESSED;
+							LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkON,DummyCB);
 						}
 						else if (OKState == FIRST_PRESSED)
 						{
 							OKState = NOT_PRESSED;
 						}
 					}
+				}
 					break;
 				case MODE_SWITCH_VALUE :
+				if(ignoreFlag == FALSE)
+				{   
+					ignoreFlag = TRUE;
 					if(EditMode == NOT_ACTIVATED)
 					{
-
-						if (Mode == CLOCK_MODE)
-						{   
+                         
+						// if (Mode == CLOCK_MODE)
+						// {   
 							Mode = STOPWATCH_MODE;
 							previousMode = CLOCK_MODE;
-						}
-						else if (Mode == STOPWATCH_MODE)
-						{
-							Mode = CLOCK_MODE;
-							previousMode = STOPWATCH_MODE;
-						}
+
+						// }
+						// else if (Mode == STOPWATCH_MODE)
+						// {
+						// 	Mode = CLOCK_MODE;
+						// 	previousMode = STOPWATCH_MODE;
+						// }
                         printCounter = 0;
 						clockRecivedMessage [0] = 0;
 						//receiveFlag = 0;
 
 					}
+				}
 					break;
 				case EDIT_SWITCH_VALUE :
+				if(ignoreFlag == FALSE)
+				{   
+					ignoreFlag = TRUE;
 					if(EditMode == NOT_ACTIVATED)
 					{
 						EditMode = ACTIVATED ;
-                        CursorPos = 0;
-						LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkON,DummyCB);
+						setCursprNeedded = TRUE ;
+						CurrentCol = LCD_enuColumn_7;
+						CurrentRow = LCD_enuFirstRow;
+                        CursorPos  = 0;
+						LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkOFF,DummyCB);
 
 					}
 					else if (EditMode == ACTIVATED)
@@ -1182,9 +1252,14 @@ void clockRunnable(void)
 						EditMode = NOT_ACTIVATED ;
 						OKState = NOT_PRESSED;
 						LCD_enuSendCommandAsync(LCD_DisplayON_CursorOFF_BlinkOFF,DummyCB);
+						printCounter = 97 ; 
 					}
+				}
+					break;
+					default :  ignoreFlag = FALSE; 
 					break;
 				}
+				
 
 				/* After handling the latest request, raise this flag to make
 					the driver ready to receive a new button request */
@@ -1203,6 +1278,7 @@ void clockRunnable(void)
 			/* Do Nothing till a message is received thorugh UART asking for a mission */
 		}
 	}
+}
 }
 
 

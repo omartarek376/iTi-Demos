@@ -1,28 +1,18 @@
 #include "HAL/HSWITCH/HSWITCH_interface.h"
 #include "MCAL/MUSART/MUSART_interface.h"
 
-#define UP_SWITCH_VALUE     0x01
-#define DOWN_SWITCH_VALUE   0x02
-#define RIGHT_SWITCH_VALUE  0x03
-#define LEFT_SWITCH_VALUE   0x04
-#define OK_SWITCH_VALUE     0x05
-#define RESET_SWITCH_VALUE  0x06
-#define MODE_SWITCH_VALUE   0x07
-#define STOP_SWITCH_VALUE   0x08
-#define START_SWITCH_VALUE  0x09
-#define EDIT_SWITCH_VALUE   0x0A
+
+#define UP_START_BUTTON 	0x08
+#define DOWN_STOP_BUTTON 	0x09
+#define LEFT_RESET_BUTTON	0x0A
+#define RIGHT_BUTTON    	0x0B
+#define OK_BUTTON 			0x0C
+#define MODE_BUTTON 		0x0D
+#define EDIT_BUTTON 		0x0E 
 
 u8 static readyForNewKey = 1;
 u8 message[1] = {0};
 static u8 switchState = 0;
-
-                                                      
-// static u8 Encryption(u8 value)                                                                          
-// { 
-//   u8 CheckSumBits= (~value) & 0x0F ;
-//   u8 EncryptedMessage = (value << 4) | (CheckSumBits) ;
-//   return EncryptedMessage;
-// }
 
 
 static u8 Encryption(u8 value) {
@@ -36,7 +26,6 @@ void messageSent (void)
 {
 	readyForNewKey = 1;
 }
-//USART_Req_t USARAT_Bytes = {.length = 1, .buffer = message, .USART_Peri = USART_Peri_1, .CB = messageSent};
 
 void switchesCheckRunnable (void) 
 {   
@@ -54,7 +43,7 @@ void switchesCheckRunnable (void)
 			 	readyForNewKey = 0;
 
 			    //Generating the message by adding the checksum to the message.
-                message[0]=Encryption(index+1);
+                message[0]=Encryption(index+8);
 			
 			    // Send the message.
 			   MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);

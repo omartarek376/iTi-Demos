@@ -4,16 +4,28 @@
 #define FALSE 0
 #define TRUE 1
 
-#define UP_SWITCH_VALUE					0x01
-#define DOWN_SWITCH_VALUE				0x02
-#define RIGHT_SWITCH_VALUE				0x03
-#define LEFT_SWITCH_VALUE				0x04
-#define OK_SWITCH_VALUE					0x05
-#define RESET_SWITCH_VALUE				0x06
-#define MODE_SWITCH_VALUE				0x07
-#define STOP_SWITCH_VALUE				0x08
-#define START_SWITCH_VALUE				0x09
-#define EDIT_SWITCH_VALUE				0x0A
+// #define UP_SWITCH_VALUE					0x01
+// #define DOWN_SWITCH_VALUE				0x02
+// #define RIGHT_SWITCH_VALUE				0x03
+// #define LEFT_SWITCH_VALUE				0x04
+// #define OK_SWITCH_VALUE					0x05
+// #define RESET_SWITCH_VALUE				0x06
+// #define MODE_SWITCH_VALUE				0x07
+// #define STOP_SWITCH_VALUE				0x08
+// #define START_SWITCH_VALUE				0x09
+// #define EDIT_SWITCH_VALUE				0x0A
+
+
+#define UP_START_BUTTON 0x08
+#define DOWN_STOP_BUTTON 0x09
+#define LEFT_RESET_BUTTON 0x0A
+#define RIGHT_BUTTON 0x0B
+#define OK_BUTTON 0x0C
+#define MODE_BUTTON 0x0D
+#define EDIT_BUTTON 0x0E 
+
+
+
 
 #define CORRUPTED_MESSAGE				0xFF
 
@@ -167,7 +179,7 @@ void recieveRunnable(void)
 			/* Check which button the user had pressed to react upon it */
 			switch (receivedButton)
 			{
-			case UP_SWITCH_VALUE:
+			case UP_START_BUTTON:
 				/* In case of the user entered the edit mode but still does not pressed the OK
 						button, he/she will be only able to navigate through the display */
 				if((EditMode == ACTIVATED) && (OKState == NOT_PRESSED))
@@ -381,7 +393,7 @@ void recieveRunnable(void)
 					}
 				}
 				break;
-			case DOWN_SWITCH_VALUE:
+			case DOWN_STOP_BUTTON:
 				/* In case of the user entered the edit mode but still does not pressed the OK
 						button, he/she will be only able to navigate through the display */
 				if((EditMode == ACTIVATED) && (OKState == NOT_PRESSED))
@@ -584,7 +596,7 @@ void recieveRunnable(void)
 					}
 				}
 				break;
-			case RIGHT_SWITCH_VALUE:
+			case RIGHT_BUTTON:
 				/* In case of the user entered the edit mode, he/she will be able to navigate through the display */
 				if(EditMode == ACTIVATED)
 				{
@@ -602,7 +614,7 @@ void recieveRunnable(void)
 					}
 				}
 				break;
-			case LEFT_SWITCH_VALUE:
+			case LEFT_RESET_BUTTON:
 				/* In case of the user entered the edit mode, he/she will be able to navigate through the display */
 				if(EditMode == ACTIVATED)
 				{
@@ -620,7 +632,7 @@ void recieveRunnable(void)
 					}
 				}
 				break;
-			case OK_SWITCH_VALUE:
+			case OK_BUTTON :
 				if(EditMode == ACTIVATED)
 				{
 					if (OKState == NOT_PRESSED)
@@ -635,7 +647,7 @@ void recieveRunnable(void)
 					}
 				}
 				break;
-			case MODE_SWITCH_VALUE :
+			case MODE_BUTTON :
 				if(EditMode == NOT_ACTIVATED)
 				{
 					Mode = STOPWATCH_MODE;
@@ -649,7 +661,7 @@ void recieveRunnable(void)
 					}
 				}
 				break;
-			case EDIT_SWITCH_VALUE :
+			case EDIT_BUTTON :
 				if(EditMode == NOT_ACTIVATED)
 				{
 					EditMode = ACTIVATED ;
@@ -697,7 +709,7 @@ void recieveRunnable(void)
 			/* Check which button the user had pressed to react upon it */
 			switch (receivedButton)
 			{
-			case MODE_SWITCH_VALUE :
+			case MODE_BUTTON :
 				if(EditMode == NOT_ACTIVATED)
 				{
 					Mode = CLOCK_MODE;
@@ -709,14 +721,14 @@ void recieveRunnable(void)
 					recivedMessage[0]= 0 ;
 				}
 				break;
-			case START_SWITCH_VALUE :
+			case UP_START_BUTTON :
 				startFlag = TRUE;
 				break;
-			case STOP_SWITCH_VALUE :
+			case DOWN_STOP_BUTTON :
 				startFlag = FALSE;
 				S_printCounter = 0;
 				break;
-			case RESET_SWITCH_VALUE :
+			case LEFT_RESET_BUTTON :
 				LCD_enuClearScreenAsync(DummyCB);
 				resetFlag = TRUE ;
 				startFlag = FALSE;

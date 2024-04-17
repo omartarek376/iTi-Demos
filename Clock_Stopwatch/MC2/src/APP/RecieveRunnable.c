@@ -67,8 +67,8 @@ extern u8 printEntireScreen ;
 
 static u8 buttonHandled = TRUE ;
 static OKSTATE OKState = NOT_PRESSED;
-static LCD_enuRowNumber_t CurrentRow = LCD_enuFirstRow;
-static LCD_enuColumnNumber_t CurrentCol = LCD_enuColumn_1;
+LCD_enuRowNumber_t CurrentRow = LCD_enuFirstRow;
+LCD_enuColumnNumber_t CurrentCol = LCD_enuColumn_1;
 static u8 CursorPos = 0;
 
 extern  u32  entryCounter  ;
@@ -77,6 +77,7 @@ extern  u32  printCounter  ;
 
 extern u8 clearOnce ;
 extern u8 startFlag ;
+
 
 static u8 resetFlag = FALSE ;
 
@@ -95,12 +96,13 @@ extern u8 stopwatchNotStarted ;
 
 /* Variables related to the date and time. Initially We are setting them as follows */
 extern u8  S_hours   ;
-extern u8   S_minutes;
+extern u8  S_minutes;
 extern u8  S_seconds;
 extern u16 S_milliseconds;
 
 extern u8 editModeCounter;
 
+extern u8 stopFlag;
 
 
 /**
@@ -228,6 +230,8 @@ void recieveRunnable(void)
 								day += 10;
 							}
 						}
+						LCD_enuWriteNumberAsync(day,DummyCB);
+						editModeCounter = 0;
 						break;
 					case DAY_UNITS_POSITION:
 						/* The cursor now is at the position of the Days' units */
@@ -247,6 +251,8 @@ void recieveRunnable(void)
 						{
 							day++;
 						}
+						LCD_enuWriteNumberAsync(day%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case MONTHS_TENS_POSITION:
 						if ((month == 1) || (month == 2))
@@ -261,6 +267,8 @@ void recieveRunnable(void)
 						{
 							month -= 10;
 						}
+						LCD_enuWriteNumberAsync(month,DummyCB);
+						editModeCounter = 0;
 						break ;
 					case MONTHS_UNITS_POSITION:
 						if(month == 12)
@@ -271,18 +279,28 @@ void recieveRunnable(void)
 						{
 							month++;
 						}
+						LCD_enuWriteNumberAsync(month%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case YEARS_THOUSANDS_POSITION:
 						year += 1000;
+						LCD_enuWriteNumberAsync(year,DummyCB);
+						editModeCounter = 0;
 						break;
 					case YEARS_HUNDREDS_POSITION:
 						year += 100;
+						LCD_enuWriteNumberAsync(year%1000,DummyCB);
+						editModeCounter = 0;
 						break;
 					case YEARS_TENS_POSITION:
 						year += 10;
+						LCD_enuWriteNumberAsync(year%100,DummyCB);
+						editModeCounter = 0;
 						break;
 					case YEARS_UNITS_POSITION:
 						year += 1;
+						LCD_enuWriteNumberAsync(year%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case HOURS_TENS_POSITION:
 						if ((hours >= 0) && (hours <= 13))
@@ -293,6 +311,8 @@ void recieveRunnable(void)
 						{
 							hours -= 10;
 						}
+						LCD_enuWriteNumberAsync(hours,DummyCB);
+						editModeCounter = 0;
 						break;
 					case HOURS_UNITS_POSITION:
 						if((hours >= 0) && (hours <= 22))
@@ -303,6 +323,8 @@ void recieveRunnable(void)
 						{
 							/* Do Nothing as 23 is the last hour could be displayed in the hours digits */
 						}
+						LCD_enuWriteNumberAsync(hours%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case MINUTES_TENS_POSITION:
 						if((minutes >= 0) && (minutes <= 49))
@@ -313,6 +335,8 @@ void recieveRunnable(void)
 						{
 							minutes -= 50;
 						}
+						LCD_enuWriteNumberAsync(minutes,DummyCB);
+						editModeCounter = 0;
 						break;
 					case MINUTES_UNITS_POSITION:
 						if((minutes >= 0) && (minutes <= 58))
@@ -323,6 +347,8 @@ void recieveRunnable(void)
 						{
 							/* Do Nothing as 59 is the last minutes could be displayed in the minutes digits */
 						}
+						LCD_enuWriteNumberAsync(minutes%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case SECONDS_TENS_POSITION:
 						if((seconds >= 0) && (seconds <= 49))
@@ -333,6 +359,8 @@ void recieveRunnable(void)
 						{
 							seconds -= 50;
 						}
+						LCD_enuWriteNumberAsync(seconds,DummyCB);
+						editModeCounter = 0;
 						break;
 					case SECONDS_UNITS_POSITION:
 						if((seconds >= 0) && (seconds <= 58))
@@ -343,6 +371,8 @@ void recieveRunnable(void)
 						{
 							/* Do Nothing as 59 is the last seconds could be displayed in the seconds digits */
 						}
+						LCD_enuWriteNumberAsync(seconds%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					default:
 						/* You are in a position that you can not edit the data in it,
@@ -388,6 +418,8 @@ void recieveRunnable(void)
 						{
 							day -= 10;
 						}
+						LCD_enuWriteNumberAsync(day,DummyCB);
+						editModeCounter = 0;
 						break;
 					case DAY_UNITS_POSITION:
 						if( day == 10 ||day == 20 ||day == 30 )
@@ -398,6 +430,8 @@ void recieveRunnable(void)
 						{
 							day--;
 						}
+						LCD_enuWriteNumberAsync(day%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case MONTHS_TENS_POSITION:
 						if((month >= 1) && (month <= 10))
@@ -408,6 +442,8 @@ void recieveRunnable(void)
 						{
 							month -= 10;
 						}
+						LCD_enuWriteNumberAsync(month,DummyCB);
+						editModeCounter = 0;
 						break ;
 					case MONTHS_UNITS_POSITION:
 						if((month == 1) || (month == 10))
@@ -419,6 +455,8 @@ void recieveRunnable(void)
 						{
 							month--;
 						}
+						LCD_enuWriteNumberAsync(month%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case YEARS_THOUSANDS_POSITION:
 						if (year < 1000)
@@ -428,7 +466,8 @@ void recieveRunnable(void)
 						else
 						{
 							year -= 1000;
-						}
+						}LCD_enuWriteNumberAsync(year,DummyCB);
+						editModeCounter = 0;
 						break;
 					case YEARS_HUNDREDS_POSITION:
 						if (year < 100)
@@ -439,6 +478,8 @@ void recieveRunnable(void)
 						{
 							year -= 100;
 						}
+						LCD_enuWriteNumberAsync(year%1000,DummyCB);
+						editModeCounter = 0;
 						break;
 					case YEARS_TENS_POSITION:
 						if (year < 10)
@@ -449,6 +490,8 @@ void recieveRunnable(void)
 						{
 							year -= 10;
 						}
+						LCD_enuWriteNumberAsync(year%100,DummyCB);
+						editModeCounter = 0;
 						break;
 					case YEARS_UNITS_POSITION:
 						if (year < 1)
@@ -459,6 +502,8 @@ void recieveRunnable(void)
 						{
 							year--;
 						}
+						LCD_enuWriteNumberAsync(year%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case HOURS_TENS_POSITION:
 						if((hours >= 0) && (hours <= 9))
@@ -469,6 +514,8 @@ void recieveRunnable(void)
 						{
 							hours -= 10;
 						}
+						LCD_enuWriteNumberAsync(hours,DummyCB);
+						editModeCounter = 0;
 						break;
 					case HOURS_UNITS_POSITION:
 						if((hours == 0) || (hours == 10) || (hours == 20))
@@ -479,6 +526,8 @@ void recieveRunnable(void)
 						{
 							hours--;
 						}
+						LCD_enuWriteNumberAsync(hours%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case MINUTES_TENS_POSITION:
 						if((minutes >= 0) && (minutes <= 9))
@@ -489,6 +538,8 @@ void recieveRunnable(void)
 						{
 							minutes -= 10;
 						}
+						LCD_enuWriteNumberAsync(minutes,DummyCB);
+						editModeCounter = 0;
 						break;
 					case MINUTES_UNITS_POSITION:
 						if((minutes % 10) == 0)
@@ -499,6 +550,8 @@ void recieveRunnable(void)
 						{
 							minutes--;
 						}
+						LCD_enuWriteNumberAsync(minutes%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					case SECONDS_TENS_POSITION:
 						if((seconds >= 0) && (seconds <= 9))
@@ -509,6 +562,8 @@ void recieveRunnable(void)
 						{
 							seconds -= 10;
 						}
+						LCD_enuWriteNumberAsync(seconds,DummyCB);
+						editModeCounter = 0;
 						break;
 					case SECONDS_UNITS_POSITION:
 						if((seconds % 10) == 0)
@@ -519,6 +574,8 @@ void recieveRunnable(void)
 						{
 							seconds--;
 						}
+						LCD_enuWriteNumberAsync(seconds%10,DummyCB);
+						editModeCounter = 0;
 						break;
 					default:
 						/* You are in a position that you can not edit the data in it,

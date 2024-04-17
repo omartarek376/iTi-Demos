@@ -73,15 +73,18 @@ typedef enum
 /*								Variables's Declaration								*/
 /************************************************************************************/
 
-MODES Mode = STOPWATCH_MODE;
+MODES Mode = CLOCK_MODE;
 
 EDITMODES EditMode = NOT_ACTIVATED;
 
-MODES previousMode = CLOCK_MODE ;
+MODES previousMode = STOPWATCH_MODE ;
 
 static u8 dayPassed = FALSE ;
 
 u8 setCursprNeedded = FALSE ;
+
+extern LCD_enuRowNumber_t CurrentRow ;
+extern LCD_enuColumnNumber_t CurrentCol;
 
 u8 clockRecivedMessage [1] = {0};
 
@@ -90,12 +93,12 @@ u32  LCD_Counter   = 0;
 u32  printCounter  = 0;
 
 /* Variables related to the date and time. Initially We are setting them as follows */
-u8 hours   = 23;
-u8 minutes = 59;
-u8 seconds = 50;
-u8 day = 31;
-u8 month = 12;
-u16 year = 2023;
+u8 hours   = 6;
+u8 minutes = 0;
+u8 seconds = 0;
+u8 day = 17;
+u8 month = 4;
+u16 year = 2024;
 
 u8 editModeCounter= 0 ;
 
@@ -646,6 +649,14 @@ void clockRunnable(void)
 				editModeCounter ++ ;
 				break;
 			case 18:
+			LCD_enuSetCursorAsync(CurrentRow,CurrentCol,DummyCB);
+				editModeCounter ++ ;
+				break;
+			case 19:
+			case 20:
+				editModeCounter ++ ;
+				break;
+			case 21:
 				editModeCounter = 0 ;
 				break;
 			}

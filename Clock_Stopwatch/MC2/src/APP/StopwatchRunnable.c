@@ -93,6 +93,8 @@ u8 printEntireScreen = TRUE;
 
 u8 startFlag = FALSE ;
 
+u8 stopFlag = FALSE ;
+
 u8 clearOnce = FALSE ;
 
 u8  stopwatchNotStarted = FALSE ;

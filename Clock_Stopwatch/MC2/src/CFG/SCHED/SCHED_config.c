@@ -22,16 +22,13 @@
 
 
 /* Add here The functions that you will set in the callBackFn member for the runnables */
-extern void Runnable_APP1 (void);
-//extern void switchesCheck (void);
+
 extern void RUNNABLE_LCD(void);
 extern void SW_Runnable(void);
 extern void clockRunnable(void);
 extern void StopwatchRunnable(void);
 extern void switchesCheckRunnable (void); 
-extern void reciverunnable (void);
-extern void sendrunnable (void);
-extern void recieveRunnable(void) ;
+extern void receiveRunnable(void) ;
 
 
 
@@ -64,51 +61,35 @@ extern void recieveRunnable(void) ;
  * 																					*/
 
 const runnable_t arrayOfRunnables [_RunnablesNumber_] = {
-	[toggleTheLED] 		= { .name = "Toggle LED each second",
-							.periodicityMS = 1000,
-							.firstDelay = 0,
-							.callBackFn = Runnable_APP1 
-	},
-	[lcdRunnable] 		= { .name = "LCD module",
-							.periodicityMS = 1,
-							.firstDelay=0,
-							.callBackFn = RUNNABLE_LCD
-	},
-	[Switch_Debounce] 		= { .name = "Switch_Debounce",
-							.periodicityMS = 30,
-							.firstDelay=50,
-							.callBackFn = SW_Runnable
-	},
-	[Switch_check]= { .name = "Switch Check",
-							.periodicityMS =200,
-							.firstDelay=200,
-							.callBackFn = switchesCheckRunnable 
-	},
-	[Clock_Runnable]= { .name = "Clock_Runnable",
-							.periodicityMS =10,
-							.firstDelay=50,
-							.callBackFn = clockRunnable
-	},
+		[lcdRunnable] 			= { .name = "LCD module",
+									.periodicityMS = 1,
+									.firstDelay=0,
+									.callBackFn = RUNNABLE_LCD
+		},
+		[Switch_Debounce] 		= { .name = "Switch_Debounce",
+									.periodicityMS = 30,
+									.firstDelay=50,
+									.callBackFn = SW_Runnable
+		},
+		[Switch_check]			= { .name = "Switch Check",
+									.periodicityMS =200,
+									.firstDelay=200,
+									.callBackFn = switchesCheckRunnable
+		},
+		[Clock_Runnable]		= { .name = "Clock_Runnable",
+									.periodicityMS =10,
+									.firstDelay=50,
+									.callBackFn = clockRunnable
+		},
 
-	[Stopwatch_Runnable]= { .name = "Stopwatch_Runnable",
-							.periodicityMS = 20,
-							.firstDelay=50,
-							.callBackFn = StopwatchRunnable
-	},
-	[Recieve_Runnable]= { .name = "Recieve_Runnable",
-							.periodicityMS = 200,
-							.firstDelay=200,
-							.callBackFn = recieveRunnable
-	},
-
-	// [recive]= { .name = "Stopwatch_Runnable",
-	// 						.periodicityMS =50,
-	// 						.firstDelay= 1000,
-	// 						.callBackFn = reciverunnable
-	// },
-	// [send]= { .name = "Clock_Runnable",
-	// 						.periodicityMS =50 ,
-	// 						.firstDelay = 3000,
-	// 						.callBackFn = sendrunnable
-	// }
+		[Stopwatch_Runnable]	= { .name = "Stopwatch_Runnable",
+									.periodicityMS = 20,
+									.firstDelay=50,
+									.callBackFn = StopwatchRunnable
+		},
+		[Recieve_Runnable]		= { .name = "Recieve_Runnable",
+									.periodicityMS = 200,
+									.firstDelay=200,
+									.callBackFn = receiveRunnable
+		}
 };

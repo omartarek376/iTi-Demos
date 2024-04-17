@@ -1,49 +1,68 @@
+/******************************************************************************
+ *
+ * Project: Digital Clock: 	- Display configurable date and time.
+ * 							- Display configurable stopwatch.
+ *
+ * File Name: ReceiveRunnable.c
+ *
+ * Description: Runnable concerned with receiving and handling the requests in the project.
+ *
+ * Authors: Mina Ayman, Shaher Shah.
+ *
+ * Date: 08-04-2024
+ *
+ *******************************************************************************/
+
+
+/************************************************************************************/
+/*										Includes									*/
+/************************************************************************************/
 #include "MCAl/MUSART/MUSART_interface.h"
 #include "HAL/HLCD/HLCD_interface.h"
 
-#define FALSE 0
-#define TRUE 1
-
-// #define UP_SWITCH_VALUE					0x01
-// #define DOWN_SWITCH_VALUE				0x02
-// #define RIGHT_SWITCH_VALUE				0x03
-// #define LEFT_SWITCH_VALUE				0x04
-// #define OK_SWITCH_VALUE					0x05
-// #define RESET_SWITCH_VALUE				0x06
-// #define MODE_SWITCH_VALUE				0x07
-// #define STOP_SWITCH_VALUE				0x08
-// #define START_SWITCH_VALUE				0x09
-// #define EDIT_SWITCH_VALUE				0x0A
 
 
-#define UP_START_BUTTON 0x08
-#define DOWN_STOP_BUTTON 0x09
-#define LEFT_RESET_BUTTON 0x0A
-#define RIGHT_BUTTON 0x0B
-#define OK_BUTTON 0x0C
-#define MODE_BUTTON 0x0D
-#define EDIT_BUTTON 0x0E 
+/************************************************************************************/
+/*								MACROs definitions									*/
+/************************************************************************************/
+
+#define FALSE 						0
+#define TRUE 						1
+
+
+#define UP_START_BUTTON 			0x08
+#define DOWN_STOP_BUTTON 			0x09
+#define LEFT_RESET_BUTTON 			0x0A
+#define RIGHT_BUTTON 				0x0B
+#define OK_BUTTON 					0x0C
+#define MODE_BUTTON 				0x0D
+#define EDIT_BUTTON 				0x0E
+
+#define CORRUPTED_MESSAGE			0xFF
+
+/* These defines are used in edit mode to know which position did the user set the cursor,
+ * We are only concerned with the editable positions. */
+#define DAY_TENS_POSITION			6
+#define DAY_UNITS_POSITION			7
+#define MONTHS_TENS_POSITION		9
+#define MONTHS_UNITS_POSITION		10
+#define YEARS_THOUSANDS_POSITION	12
+#define YEARS_HUNDREDS_POSITION		13
+#define YEARS_TENS_POSITION			14
+#define YEARS_UNITS_POSITION		15
+
+#define HOURS_TENS_POSITION			24
+#define HOURS_UNITS_POSITION		25
+#define MINUTES_TENS_POSITION		27
+#define MINUTES_UNITS_POSITION		28
+#define SECONDS_TENS_POSITION		30
+#define SECONDS_UNITS_POSITION		31
 
 
 
-
-#define CORRUPTED_MESSAGE				0xFF
-
-#define DAY_TENS_POSITION				6
-#define DAY_UNITS_POSITION				7
-#define MONTHS_TENS_POSITION			9
-#define MONTHS_UNITS_POSITION			10
-#define YEARS_THOUSANDS_POSITION		12
-#define YEARS_HUNDREDS_POSITION			13
-#define YEARS_TENS_POSITION				14
-#define YEARS_UNITS_POSITION			15
-
-#define HOURS_TENS_POSITION				24
-#define HOURS_UNITS_POSITION			25
-#define MINUTES_TENS_POSITION			27
-#define MINUTES_UNITS_POSITION			28
-#define SECONDS_TENS_POSITION			30
-#define SECONDS_UNITS_POSITION			31
+/************************************************************************************/
+/*							User-defined types Declaration							*/
+/************************************************************************************/
 
 
 typedef enum
@@ -66,34 +85,38 @@ typedef enum
 	FIRST_PRESSED
 }OKSTATE;
 
+
+
+/************************************************************************************/
+/*								Variables's Declaration								*/
+/************************************************************************************/
+
+
 u8 recivedMessage[1] = {0};
-u8 receiveFlag = 0 ;
+
 
 extern MODES Mode ;
 extern MODES previousMode ;
-extern u8 setCursprNeedded ;
+extern u8 setCursorNeedded ;
 extern EDITMODES EditMode ;
 
-extern u8 printEntireScreen ;
-
-
-static u8 buttonHandled = TRUE ;
-static OKSTATE OKState = NOT_PRESSED;
+/* These variables are related to the edit mode, where they save the current row, current column
+ * and current position where the user set the cursor at */
 LCD_enuRowNumber_t CurrentRow = LCD_enuFirstRow;
 LCD_enuColumnNumber_t CurrentCol = LCD_enuColumn_1;
 static u8 CursorPos = 0;
 
-extern  u32  entryCounter  ;
-extern  u32  LCD_Counter   ;
-extern  u32  printCounter  ;
-
+/* Used flags */
+u8 receiveFlag = 0 ;
 extern u8 clearOnce ;
 extern u8 startFlag ;
-
-
 static u8 resetFlag = FALSE ;
+extern u8 stopwatchNotStarted ;
+static u8 buttonHandled = TRUE ;
+static OKSTATE OKState = NOT_PRESSED;
+extern u8 printEntireScreen ;
 
-/* Variables related to the date and time. Initially We are setting them as follows */
+/* Variables related to the date and time. */
 extern u8 hours ;
 extern u8 minutes;
 extern u8 seconds;
@@ -101,10 +124,11 @@ extern u8 day;
 extern u8 month;
 extern u16 year ;
 
-extern u32  S_LCD_Counter  ;
-extern u32  S_printCounter  ;
-
-extern u8 stopwatchNotStarted ;
+/* Variable related to the updating of the clock during the displaying */
+extern u32 printCounter;
+extern u32 S_LCD_Counter;
+extern u32 S_printCounter;
+extern u8 editModeCounter;
 
 /* Variables related to the date and time. Initially We are setting them as follows */
 extern u8  S_hours   ;
@@ -112,17 +136,18 @@ extern u8  S_minutes;
 extern u8  S_seconds;
 extern u16 S_milliseconds;
 
-extern u8 editModeCounter;
 
-extern u8 stopFlag;
+
+/************************************************************************************/
+/*							Static Functions' Implementation						*/
+/************************************************************************************/
 
 
 /**
  *@brief : Function that decryptes the received encrypted message from the UART.
- *@param : Rececived message.
- *@return: Data that is extracted from the recevied encrypted message.
+ *@param : Received message.
+ *@return: Data that is extracted from the received encrypted message.
  */
-
 static u8 Decryption(u8 value) {
 	u8 CheckSumBits = value & 0x0F;
 	u8 Data = (value >> 4);
@@ -145,20 +170,36 @@ static void DummyCB(void)
 
 }
 
+/**
+ *@brief : Callback function which is called whenever the receiving done.
+ *@param : void.
+ *@return: void.
+ */
 void receiveCallback (void)
 {
 	receiveFlag = 1 ;
 	buttonHandled = FALSE ;
 }
 
+/* The buffer that would be received */
 USART_Req_t received_Bytes = {.length = 1, .buffer = recivedMessage, .USART_Peri = USART_Peri_1, .CB = receiveCallback};
 
 
-void recieveRunnable(void)
+
+/************************************************************************************/
+/*								Functions' Implementation							*/
+/************************************************************************************/
+
+
+/**
+ *@brief : A runnable that comes every 200 milliseconds to receive user's requests and handle it.
+ *@param : void.
+ *@return: void.
+ */
+void receiveRunnable(void)
 {
-	if( buttonHandled == TRUE)
+	if(buttonHandled == TRUE)
 	{
-		//MUSART_enuRecieveBufferAsync(USART_1,recivedMessage,1,receiveCallback);
 		USART_RXBufferAsyncZC(received_Bytes);
 	}
 	else
@@ -168,7 +209,7 @@ void recieveRunnable(void)
 
 
 	/* If a message is received go on handle it */
-	if(receiveFlag == TRUE && Mode == CLOCK_MODE)
+	if((receiveFlag == TRUE) && (Mode == CLOCK_MODE))
 	{
 		/* Lower the flag so We could be able to receive the next request once the current one is handled */
 		receiveFlag = FALSE;
@@ -176,7 +217,7 @@ void recieveRunnable(void)
 		u8 receivedButton = 0;
 		receivedButton = Decryption(recivedMessage[0]);
 
-		/* Check whether the recevied data is correct and We can deal with its content
+		/* Check whether the received data is correct and We can deal with its content
 				or it is corrupted so ignore it */
 		if(receivedButton != 0xFF)
 		{
@@ -414,7 +455,7 @@ void recieveRunnable(void)
 					}
 					LCD_enuSetCursorAsync (CurrentRow,CurrentCol,DummyCB);
 				}
-				else if (EditMode == ACTIVATED && OKState == FIRST_PRESSED )
+				else if ((EditMode == ACTIVATED) && (OKState == FIRST_PRESSED))
 				{
 					/* Calculating the position where the user is setting the cursor on to make sure
 							that he is editing only the date and time digits*/
@@ -659,7 +700,7 @@ void recieveRunnable(void)
 					printCounter = 0;
 					S_printCounter = 0;
 					recivedMessage [0] = 0;
-					if(stopwatchNotStarted == FALSE)
+					if(stopwatchNotStarted == FALSE && printEntireScreen == TRUE)
 					{
 						stopwatchNotStarted = TRUE;
 					}
@@ -669,13 +710,11 @@ void recieveRunnable(void)
 				if(EditMode == NOT_ACTIVATED)
 				{
 					EditMode = ACTIVATED ;
-					setCursprNeedded = TRUE ;
+					setCursorNeedded = TRUE ;
 					CurrentCol = LCD_enuColumn_7;
 					CurrentRow = LCD_enuFirstRow;
 					CursorPos  = 0;
 					editModeCounter = 0;
-					//LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkOFF,DummyCB);
-
 				}
 				else if (EditMode == ACTIVATED)
 				{
@@ -686,19 +725,18 @@ void recieveRunnable(void)
 				}
 				break;
 			}
-			/* After handling the latest request, raise this flag to make
-					the driver ready to receive a new button request */
-			//requestHandled = TRUE;
+			/* After handling the latest request, raise this flag to make the driver ready to
+			 * receive a new button request */
 			buttonHandled = TRUE;
 		}
 		else
 		{
-			/* If the data is corrupted raise this flag to make the driver ready to receive a new button request */
-			//requestHandled = TRUE;
+			/* If the data is corrupted raise this flag to make the driver ready to receive
+			 * a new button request */
 			buttonHandled = TRUE;
 		}
 	}
-	else if (receiveFlag == TRUE && Mode == STOPWATCH_MODE )
+	else if ((receiveFlag == TRUE) && (Mode == STOPWATCH_MODE))
 	{
 		/* Lower the flag so We could be able to receive the next request once the current one is handled */
 		receiveFlag = FALSE;
@@ -706,7 +744,7 @@ void recieveRunnable(void)
 		u8 receivedButton = 0;
 		receivedButton = Decryption(recivedMessage[0]);
 
-		/* Check whether the recevied data is correct and We can deal with its content
+		/* Check whether the received data is correct and We can deal with its content
 				or it is corrupted so ignore it */
 		if(receivedButton != CORRUPTED_MESSAGE)
 		{
@@ -746,16 +784,19 @@ void recieveRunnable(void)
 				break;
 
 			}
-			/* After handling the latest request, raise this flag to make
-					the driver ready to receive a new button request */
-			//requestHandled = TRUE;
+			/* After handling the latest request, raise this flag to make the driver ready to
+			 * receive a new button request */
 			buttonHandled = TRUE;
 		}
 		else
 		{
+			/* If the data is corrupted raise this flag to make the driver ready to receive
+			 * a new button request */
 			buttonHandled = TRUE;
-
 		}
-
+	}
+	else
+	{
+		/* Do Nothing */
 	}
 }

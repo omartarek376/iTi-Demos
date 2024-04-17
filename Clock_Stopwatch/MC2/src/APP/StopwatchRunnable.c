@@ -3,9 +3,9 @@
  * Project: Digital Clock: 	- Display configurable date and time.
  * 							- Display configurable stopwatch.
  *
- * File Name: ClockRunnable.c
+ * File Name: StopwatchRunnable.c
  *
- * Description: Runnable concerned with Clock mode in the project.
+ * Description: Runnable concerned with Stopwatch mode in the project.
  *
  * Authors: Mina Ayman, Shaher Shah.
  *
@@ -18,13 +18,10 @@
 /*										Includes									*/
 /************************************************************************************/
 
+
 #include "MCAL/MUSART/MUSART_interface.h"
 #include "HAL/HLCD/HLCD_interface.h"
 
-
-/************************************************************************************/
-/*									Macros Declaration								*/
-/************************************************************************************/
 
 
 /************************************************************************************/
@@ -72,9 +69,7 @@ typedef enum
 /************************************************************************************/
 /*								Variables's Declaration								*/
 /************************************************************************************/
-static u32  entryCounter    = 0;
-u32  S_LCD_Counter          = 0;
-u32  S_printCounter         = 0;
+
 
 /* Variables related to the date and time. Initially We are setting them as follows */
 u8  S_hours   = 0;
@@ -82,22 +77,25 @@ u8  S_minutes = 0;
 u8  S_seconds = 0;
 u16 S_milliseconds = 0;
 
+/* Variable related to the updating of the clock during the displaying */
+u32  S_LCD_Counter          = 0;
+u32  S_printCounter         = 0;
+
+/* Used flags */
+u8 printEntireScreen = TRUE;
+u8 startFlag = FALSE ;
+u8 stopFlag = FALSE ;
+u8 clearOnce = FALSE ;
+u8  stopwatchNotStarted = FALSE ;
+
 
 extern MODES Mode ;
-
 extern MODES previousMode ;
 
-extern EDITMODES EditMode;
+/* Counter that is responsible of updating the stopwatch variables in the background */
+static u32  entryCounter    = 0;
 
-u8 printEntireScreen = TRUE;
 
-u8 startFlag = FALSE ;
-
-u8 stopFlag = FALSE ;
-
-u8 clearOnce = FALSE ;
-
-u8  stopwatchNotStarted = FALSE ;
 
 /************************************************************************************/
 /*							Static Functions' Implementation						*/
@@ -120,8 +118,7 @@ static void DummyCB(void)
 
 
 /**
- *@brief : A runnable that comes every 100 milliseconds to update the date and time, and to
-			respond to the users requests.
+ *@brief : A runnable that comes every 20 milliseconds to update the stopwatch.
  *@param : void.
  *@return: void.
  */
@@ -129,7 +126,7 @@ void StopwatchRunnable(void)
 {  
 
 	/************************************************************************************/
-	/* 			The following part updates the date and time every 1 seconds 			*/
+	/* 			The following part updates the stopwatch every 100 milliseconds 			*/
 	/************************************************************************************/
 	if(startFlag == TRUE && entryCounter %5 == 0 && entryCounter !=0)
 	{ 
@@ -160,14 +157,23 @@ void StopwatchRunnable(void)
 		}
 
 	}
+
+	/* Only update the stopwatch when the start button is pressed */
 	if(startFlag == TRUE)
 	{
 		entryCounter ++ ;
 	}
-	if( Mode == STOPWATCH_MODE && printEntireScreen == FALSE &&  startFlag == TRUE)
+
+	/************************************************************************************/
+	/* 	The following part checks on the selected mode, if it is the STOPWATCH_MODE, it Will
+		display the updated values of the stopwatch. */
+	/************************************************************************************/
+	if((Mode == STOPWATCH_MODE) && ((printEntireScreen == FALSE) && (startFlag == TRUE) || (stopwatchNotStarted == FALSE)))
 	{
 		switch(S_printCounter)
 		{
+		/* The empty cases are because the LCD driver is not buffering the coming requests,
+		* so We need to hold on the required time for each request from the LCD */
 		case 0:
 			if(clearOnce == FALSE)
 			{
@@ -177,9 +183,6 @@ void StopwatchRunnable(void)
 			S_printCounter ++ ;
 			break ;
 		case 1 :
-			S_printCounter ++ ;
-			break;
-		case 2 :
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync  (LCD_enuFirstRow,LCD_enuColumn_4 ,DummyCB);
@@ -190,10 +193,7 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 3:
-			S_printCounter++;
-			break;
-		case 4 :
+		case 2 :
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuWriteStringAsync("STOPWATCH",DummyCB);
@@ -211,19 +211,13 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
+		case 3:
+		case 4:
 		case 5:
-			S_printCounter ++;
-			break;
 		case 6:
 			S_printCounter ++;
 			break;
 		case 7:
-			S_printCounter ++;
-			break;
-		case 8:
-			S_printCounter ++;
-			break;
-		case 9:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_3,DummyCB);
@@ -241,10 +235,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 10:
+		case 8:
 			S_printCounter ++;
 			break;
-		case 11:
+		case 9:
 			if (previousMode == CLOCK_MODE)
 			{
 				if (S_hours < 10)
@@ -262,10 +256,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 12:
+		case 10:
 			S_printCounter ++;
 			break;
-		case 13:
+		case 11:
 			if (previousMode == CLOCK_MODE)
 			{
 				if(S_hours < 10)
@@ -290,17 +284,14 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 14:
+		case 12:
 			S_printCounter ++;
 			break;
-		case 15:
+		case 13:
 			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			S_printCounter ++;
 			break;
-		case 16:
-			S_printCounter ++;
-			break;
-		case 17:
+		case 14:
 			if(S_milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -311,10 +302,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 18:
+		case 15:
 			S_printCounter ++;
 			break;
-		case 19 :
+		case 16:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_5,DummyCB);
@@ -332,10 +323,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 20:
+		case 17:
 			S_printCounter ++;
 			break;
-		case 21:
+		case 18:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuWriteStringAsync(":",DummyCB);
@@ -353,10 +344,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 22:
+		case 19:
 			S_printCounter ++;
 			break;
-		case 23:
+		case 20:
 			if (previousMode == CLOCK_MODE)
 			{
 				if (S_minutes < 10)
@@ -374,17 +365,14 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 24:
+		case 21:
 			S_printCounter ++;
 			break;
-		case 25:
+		case 22:
 			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			S_printCounter ++;
 			break;
-		case 26:
-			S_printCounter ++;
-			break;
-		case 27:
+		case 23:
 			if(S_milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -395,10 +383,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 28:
+		case 24:
 			S_printCounter ++;
 			break;
-		case 29 :
+		case 25 :
 			if (previousMode == CLOCK_MODE)
 			{
 				if (S_minutes < 10)
@@ -416,10 +404,7 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 30:
-			S_printCounter ++;
-			break;
-		case 31:
+		case 26:
 			if (previousMode == CLOCK_MODE)
 			{
 				if(S_minutes < 10)
@@ -444,17 +429,14 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 32:
+		case 27:
 			S_printCounter ++;
 			break;
-		case 33:
+		case 28:
 			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			S_printCounter ++;
 			break;
-		case 34:
-			S_printCounter ++;
-			break;
-		case 35:
+		case 29:
 			if(S_milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -465,10 +447,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 36:
+		case 30:
 			S_printCounter ++;
 			break;
-		case 37:
+		case 31:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_8,DummyCB);
@@ -486,10 +468,7 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 38:
-			S_printCounter ++;
-			break;
-		case 39:
+		case 32:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuWriteStringAsync(":",DummyCB);
@@ -507,10 +486,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 40:
+		case 33:
 			S_printCounter ++;
 			break;
-		case 41:
+		case 34:
 			if (previousMode == CLOCK_MODE)
 			{
 				if (S_seconds < 10)
@@ -528,10 +507,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 42:
+		case 35:
 			S_printCounter ++;
 			break;
-		case 43:
+		case 36:
 			if (previousMode == CLOCK_MODE)
 			{
 				if(S_seconds < 10)
@@ -556,17 +535,14 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 44:
+		case 37:
 			S_printCounter++;
 			break;
-		case 45:
+		case 38:
 			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			S_printCounter ++;
 			break;
-		case 46:
-			S_printCounter ++;
-			break;
-		case 47:
+		case 39:
 			if(S_milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -577,10 +553,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 48:
+		case 40:
 			S_printCounter ++;
 			break;
-		case 49 :
+		case 41:
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_11,DummyCB);
@@ -592,10 +568,7 @@ void StopwatchRunnable(void)
 			S_printCounter ++;
 
 			break;
-		case 50:
-			S_printCounter ++;
-			break;
-		case 51 :
+		case 42 :
 			if (previousMode == CLOCK_MODE)
 			{
 				LCD_enuWriteStringAsync(":",DummyCB);
@@ -606,10 +579,7 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 52:
-			S_printCounter ++;
-			break;
-		case 53:
+		case 43:
 			if (previousMode == CLOCK_MODE)
 			{
 				if(S_milliseconds == 0)
@@ -628,14 +598,67 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 54 :
+		case 44 :
 			S_printCounter ++;
 			break;
-		case 55:
+		case 45:
 			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			S_printCounter ++;
 			break;
+		case 46:
+			if(S_milliseconds == 0)
+			{
+				LCD_enuWriteStringAsync("000",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(S_milliseconds,DummyCB);
+			}
+			S_printCounter ++;
+			break;
+		case 47:
+		case 48:
+			S_printCounter ++;
+			break;
+		case 49:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
+			S_printCounter ++;
+			break;
+		case 50:
+			if(S_milliseconds == 0)
+			{
+				LCD_enuWriteStringAsync("000",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(S_milliseconds,DummyCB);
+			}
+			S_printCounter ++;
+			break;
+		case 51:
+		case 52:
+			S_printCounter ++;
+			break;
+		case 53:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
+			S_printCounter ++;
+			break;
+		case 54:
+			if(S_milliseconds == 0)
+			{
+				LCD_enuWriteStringAsync("000",DummyCB);
+			}
+			else
+			{
+				LCD_enuWriteNumberAsync(S_milliseconds,DummyCB);
+			}
+			S_printCounter ++;
+			break;
+		case 55:
+			S_printCounter ++;
+			break;
 		case 56:
+			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			S_printCounter ++;
 			break;
 		case 57:
@@ -653,82 +676,10 @@ void StopwatchRunnable(void)
 			S_printCounter ++;
 			break;
 		case 59:
-			S_printCounter ++;
-			break;
-		case 60:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			S_printCounter ++;
-			break;
-		case 61:
-			S_printCounter ++;
-			break;
-		case 62:
-			if(S_milliseconds == 0)
-			{
-				LCD_enuWriteStringAsync("000",DummyCB);
-			}
-			else
-			{
-				LCD_enuWriteNumberAsync(S_milliseconds,DummyCB);
-			}
-			S_printCounter ++;
-			break;
-		case 63:
-			S_printCounter ++;
-			break;
-		case 64:
-			S_printCounter ++;
-			break;
-		case 65:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			S_printCounter ++;
-			break;
-		case 66:
-			S_printCounter ++;
-			break;
-		case 67:
-			if(S_milliseconds == 0)
-			{
-				LCD_enuWriteStringAsync("000",DummyCB);
-			}
-			else
-			{
-				LCD_enuWriteNumberAsync(S_milliseconds,DummyCB);
-			}
-			S_printCounter ++;
-			break;
-		case 68:
-			S_printCounter ++;
-			break;
-		case 69:
-			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
-			S_printCounter ++;
-			break;
-		case 70:
-			S_printCounter ++;
-			break;
-		case 71:
-			if(S_milliseconds == 0)
-			{
-				LCD_enuWriteStringAsync("000",DummyCB);
-			}
-			else
-			{
-				LCD_enuWriteNumberAsync(S_milliseconds,DummyCB);
-			}
-			S_printCounter ++;
-			break;
-		case 72:
-			S_printCounter ++;
-			break;
-		case 73:
 			LCD_enuSetCursorAsync(LCD_enuSecondRow, LCD_enuColumn_9, DummyCB);
 			S_printCounter ++;
 			break;
-		case 74:
-			S_printCounter ++;
-			break;
-		case 75:
+		case 60:
 			if (S_seconds < 10)
 			{
 				LCD_enuWriteStringAsync("0", DummyCB);
@@ -739,10 +690,10 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 76:
+		case 61:
 			S_printCounter ++;
 			break;
-		case 77:
+		case 62:
 			if (S_seconds < 10)
 			{
 				LCD_enuWriteNumberAsync(S_seconds, DummyCB);
@@ -753,17 +704,14 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 78:
+		case 63:
 			S_printCounter ++;
 			break;
-		case 79:
+		case 64:
 			LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_12,DummyCB);
 			S_printCounter ++;
 			break;
-		case 80:
-			S_printCounter ++;
-			break;
-		case 81:
+		case 65:
 			if(S_milliseconds == 0)
 			{
 				LCD_enuWriteStringAsync("000",DummyCB);
@@ -774,20 +722,18 @@ void StopwatchRunnable(void)
 			}
 			S_printCounter ++;
 			break;
-		case 82:
+		case 66:
+		case 67:
 			S_printCounter ++;
 			break;
-		case 83:
-			S_printCounter ++;
-			break;
-		case 84:
+		case 68:
 			S_printCounter =0;
 			break;
 		}
 	}
 	/************************************************************************************/
-	/* 	The following part checks on the selected mode, if it is the CLOCK_MODE, it Will
-		display Date and Time after each update */
+	/* 	The following part checks on the selected mode, if it is the STOPWATCH_MODE, it Will
+		display the initial state of the stopwatch */
 	/************************************************************************************/
 	if(Mode == STOPWATCH_MODE)
 	{  
@@ -796,11 +742,7 @@ void StopwatchRunnable(void)
 			switch(S_LCD_Counter)
 			{
 			case 0:
-				S_LCD_Counter++;
-				break;
 			case 1:
-				S_LCD_Counter++;
-				break;
 			case 2:
 				S_LCD_Counter++;
 				break;
@@ -809,106 +751,61 @@ void StopwatchRunnable(void)
 				S_LCD_Counter++;
 				break;
 			case 4:
-				S_LCD_Counter++;
-				break;
-			case 5 :
 				LCD_enuSetCursorAsync  (LCD_enuFirstRow,LCD_enuColumn_4 ,DummyCB);
 				S_LCD_Counter ++ ;
 				break;
-			case 6:
-				S_LCD_Counter ++ ;
-				break;
-			case 7:
-				S_LCD_Counter ++ ;
-				break;
-			case 8:
-				S_LCD_Counter ++ ;
-				break;
-			case 9 :
+			case 5:
 				LCD_enuWriteStringAsync("STOPWATCH",DummyCB);
 				S_LCD_Counter ++ ;
 				break;
+			case 6:
+			case 7:
+			case 8:
+			case 9:
 			case 10:
-				S_LCD_Counter ++ ;
-				break;
 			case 11:
-				S_LCD_Counter ++ ;
-				break;
 			case 12:
-				S_LCD_Counter ++ ;
-				break;
 			case 13:
-				S_LCD_Counter ++ ;
-				break;
 			case 14:
 				S_LCD_Counter ++ ;
 				break;
-			case 15:
-				S_LCD_Counter ++ ;
-				break;
-			case 16:
-				S_LCD_Counter ++ ;
-				break;
-			case 17:
-				S_LCD_Counter ++ ;
-				break;
-			case 18:
-				S_LCD_Counter ++ ;
-				break;
-			case 19 :
+			case 15 :
 				LCD_enuSetCursorAsync  (LCD_enuSecondRow,LCD_enuColumn_3 ,DummyCB);
 				S_LCD_Counter ++ ;
 				break;
-			case 20 :
+			case 16:
 				LCD_enuWriteStringAsync("00:",DummyCB);
 				S_LCD_Counter ++ ;
 				break;
+			case 17:
+			case 18:
+				S_LCD_Counter ++ ;
+				break;
+			case 19:
+				LCD_enuWriteStringAsync("00:",DummyCB);
+				S_LCD_Counter ++ ;
+				break;
+			case 20:
 			case 21:
 				S_LCD_Counter ++ ;
 				break;
 			case 22:
+				LCD_enuWriteStringAsync("00:",DummyCB);
 				S_LCD_Counter ++ ;
 				break;
 			case 23:
-				S_LCD_Counter ++ ;
-				break;
-			case 24 :
-				LCD_enuWriteStringAsync("00:",DummyCB);
+			case 24:
 				S_LCD_Counter ++ ;
 				break;
 			case 25:
-				S_LCD_Counter ++ ;
-				break;
-			case 26:
-				S_LCD_Counter ++ ;
-				break;
-			case 27:
-				S_LCD_Counter ++ ;
-				break;
-			case 28 :
-				LCD_enuWriteStringAsync("00:",DummyCB);
-				S_LCD_Counter ++ ;
-				break;
-			case 29:
-				S_LCD_Counter ++ ;
-				break;
-			case 30:
-				S_LCD_Counter ++ ;
-				break;
-			case 31:
-				S_LCD_Counter ++ ;
-				break;
-			case 32 :
 				LCD_enuWriteStringAsync("000",DummyCB);
 				S_LCD_Counter ++ ;
 				break;
-			case 33:
+			case 26:
+			case 27:
 				S_LCD_Counter ++ ;
 				break;
-			case 34:
-				S_LCD_Counter ++ ;
-				break;
-			case 35:
+			case 28:
 				S_LCD_Counter = 0 ;
 				printEntireScreen = FALSE ;
 				stopwatchNotStarted = FALSE;
@@ -917,11 +814,7 @@ void StopwatchRunnable(void)
 		}
 		else
 		{
-			/* Do Nothing till a message is received thorugh UART asking for a mission */
+			/* Do Nothing because the current mode is not stopwatch mode. */
 		}
 	}
 }
-
-
-/* We need to create a flag that give us an info whether we already displayed the Date and time and 
-	We only need to update certain digits OR we need to clear and display from the beginning*/

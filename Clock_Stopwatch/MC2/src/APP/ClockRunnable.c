@@ -20,12 +20,8 @@
 
 #include "MCAL/MUSART/MUSART_interface.h"
 #include "HAL/HLCD/HLCD_interface.h"
-#include "HAL/HLED/HLED_interface.h"
 
 
-/************************************************************************************/
-/*									Macros Declaration								*/
-/************************************************************************************/
 
 /************************************************************************************/
 /*							User-defined types Declaration							*/
@@ -73,24 +69,21 @@ typedef enum
 /*								Variables's Declaration								*/
 /************************************************************************************/
 
+/* We initially statring our system with Date and Time displayed */
 MODES Mode = CLOCK_MODE;
+MODES previousMode = STOPWATCH_MODE ;
 
 EDITMODES EditMode = NOT_ACTIVATED;
 
-MODES previousMode = STOPWATCH_MODE ;
+u8 setCursorNeedded = FALSE ;
 
-static u8 dayPassed = FALSE ;
-
-u8 setCursprNeedded = FALSE ;
-
-extern LCD_enuRowNumber_t CurrentRow ;
-extern LCD_enuColumnNumber_t CurrentCol;
-
-u8 clockRecivedMessage [1] = {0};
-
+/* Counter that is responsible of updating the clock variables in the background */
 u32  entryCounter  = 0;
-u32  LCD_Counter   = 0;
+
+/* Variable related to the updating of the clock during the displaying */
 u32  printCounter  = 0;
+
+u8 editModeCounter= 0 ;
 
 /* Variables related to the date and time. Initially We are setting them as follows */
 u8 hours   = 6;
@@ -100,7 +93,11 @@ u8 day = 17;
 u8 month = 4;
 u16 year = 2024;
 
-u8 editModeCounter= 0 ;
+/* These variables are related to the edit mode, where they save the current row and column
+ * where the user set the cursor at */
+extern LCD_enuRowNumber_t CurrentRow ;
+extern LCD_enuColumnNumber_t CurrentCol;
+
 
 
 /************************************************************************************/
@@ -119,18 +116,14 @@ static void DummyCB(void)
 }
 
 
-/**
- *@brief : Callback function of the MUSART_enuRecieveBufferAsync function, it raises a receive flag.
- *@param : void.
- *@return: void.
- */
+
+/************************************************************************************/
 /*								Functions' Implementation							*/
 /************************************************************************************/
 
 
 /**
- *@brief : A runnable that comes every 100 milliseconds to update the date and time, and to
-			respond to the users requests.
+ *@brief : A runnable that comes every 10 milliseconds to update the date and time.
  *@param : void.
  *@return: void.
  */
@@ -160,7 +153,6 @@ void clockRunnable(void)
 				/* If 24 hours passed reset the hours digits and increment the Day digits by one */
 				hours = 0;
 				day++;
-				dayPassed =TRUE;
 			}
 
 			/* If a total month passed increment the month digits and reset the days digits to one */
@@ -193,11 +185,15 @@ void clockRunnable(void)
 			}
 		}
 	}
+
+	/* Increment the counter which is responsible of updating the date and time variables. */
 	entryCounter ++ ;
 
 	/************************************************************************************/
 	/* 	The following part checks on the selected mode, if it is the CLOCK_MODE, it Will
-		display Date and Time after each update */
+		display Date and Time after each update.
+		We are updating the whole screen once each one second, and the part of the hours, minutes,
+		seconds are being updated twice during the one second. */
 	/************************************************************************************/
 	if(Mode == CLOCK_MODE )
 	{   
@@ -205,7 +201,8 @@ void clockRunnable(void)
 		{
 			switch(printCounter)
 			{
-
+			/* The empty cases are because the LCD driver is not buffering the coming requests,
+			 * so We need to hold on the required time for each request from the LCD */
 			case 0:
 				LCD_enuSetCursorAsync(LCD_enuSecondRow,LCD_enuColumn_1,DummyCB);
 				printCounter ++;
@@ -609,6 +606,9 @@ void clockRunnable(void)
 		}
 		else
 		{
+			/* When the edit mode is activated We need to set the cursor to the tens digit of the
+			 * days, and turning the cursor on without blinking and always make sure that the cursor
+			 * is at the place the user stopped at */
 			switch (editModeCounter)
 			{
 			case 0:
@@ -626,7 +626,7 @@ void clockRunnable(void)
 				editModeCounter ++ ;
 				break;
 			case 12:
-				if(setCursprNeedded == TRUE)
+				if(setCursorNeedded == TRUE)
 				{
 					LCD_enuSetCursorAsync (LCD_enuFirstRow,LCD_enuColumn_7,DummyCB);
 				}
@@ -637,10 +637,10 @@ void clockRunnable(void)
 				editModeCounter ++ ;
 				break;
 			case 15:
-				if(setCursprNeedded == TRUE)
+				if(setCursorNeedded == TRUE)
 				{
 					LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkOFF,DummyCB);
-					setCursprNeedded = FALSE ;
+					setCursorNeedded = FALSE ;
 				}
 				editModeCounter ++;
 				break;
@@ -649,7 +649,7 @@ void clockRunnable(void)
 				editModeCounter ++ ;
 				break;
 			case 18:
-			LCD_enuSetCursorAsync(CurrentRow,CurrentCol,DummyCB);
+				LCD_enuSetCursorAsync(CurrentRow,CurrentCol,DummyCB);
 				editModeCounter ++ ;
 				break;
 			case 19:
@@ -665,11 +665,6 @@ void clockRunnable(void)
 	}
 	else
 	{
-		/* Do Nothing till a message is received thorugh UART asking for a mission */
+		/* Do Nothing as the current mode is not the Clock mode */
 	}
 }
-
-
-
-/* We need to create a flag that give us an info whether we already displayed the Date and time and 
-	We only need to update certain digits OR we need to clear and display from the beginning*/

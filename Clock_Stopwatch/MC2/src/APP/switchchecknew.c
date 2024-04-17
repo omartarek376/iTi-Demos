@@ -1,5 +1,32 @@
+/******************************************************************************
+ *
+ * Project: Digital Clock: 	- Display configurable date and time.
+ * 							- Display configurable stopwatch.
+ *
+ * File Name: ReceiveRunnable.c
+ *
+ * Description: Runnable concerned with sending the requests in the project.
+ *
+ * Authors: Mina Ayman, Shaher Shah.
+ *
+ * Date: 08-04-2024
+ *
+ *******************************************************************************/
+
+
+/************************************************************************************/
+/*										Includes									*/
+/************************************************************************************/
+
+
 #include "HAL/HSWITCH/HSWITCH_interface.h"
 #include "MCAL/MUSART/MUSART_interface.h"
+
+
+
+/************************************************************************************/
+/*								MACROs definitions									*/
+/************************************************************************************/
 
 
 #define UP_START_BUTTON 	0x08
@@ -10,274 +37,83 @@
 #define MODE_BUTTON 		0x0D
 #define EDIT_BUTTON 		0x0E
 
-u8 static readyForNewKey = 1;
+
+
+/************************************************************************************/
+/*								Variables's Declaration								*/
+/************************************************************************************/
+
+
 u8 message[1] = {0};
+
+/* Used flags */
+static u8 readyForNewKey = 1;
 static u8 switchState = 0;
 
 
+
+/************************************************************************************/
+/*							Static Functions' Implementation						*/
+/************************************************************************************/
+
+
 static u8 Encryption(u8 value) {
-    u8 CheckSumBits = value & 0x0F; // Only consider lower 4 bits for checksum
-    u8 EncryptedMessage = (value << 4) | (CheckSumBits);
-    return EncryptedMessage;
+	u8 CheckSumBits = value & 0x0F; // Only consider lower 4 bits for checksum
+	u8 EncryptedMessage = (value << 4) | (CheckSumBits);
+	return EncryptedMessage;
 }
 
-
+/**
+ *@brief : Callback function which is called whenever the sending done.
+ *@param : void.
+ *@return: void.
+ */
 void messageSent (void) 
 {
 	readyForNewKey = 1;
 }
 
+/* The buffer that would be sent */
 USART_Req_t USARAT_Bytes = {.length = 1, .buffer = message, .USART_Peri = USART_Peri_1, .CB = messageSent};
 
+
+
+/************************************************************************************/
+/*								Functions' Implementation							*/
+/************************************************************************************/
+
+
+/**
+ *@brief : A runnable that comes every 200 milliseconds to send user's requests.
+ *@param : void.
+ *@return: void.
+ */
 void switchesCheckRunnable (void) 
 {   
-	 u8 index = 0  ;
-
+	u8 index = 0  ;
 
 	if (readyForNewKey == 1) 
-    {
+	{
 		for (index=0 ; index < _Switch_Num ; index ++ )
 		{
 			switchState = HSWITCH_u32GetSwitchState(index);
 			if(switchState == SWITCH_STATUS_PRESSED )
 			{   
 				// Stop responding for a new press till the current message is sent.
-			 	readyForNewKey = 0;
+				readyForNewKey = 0;
 
-			    //Generating the message by adding the checksum to the message.
-                message[0]=Encryption(index+8);
-			
-			    // Send the message.
-			   //MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);
-			   USART_TXBufferAsyncZC(USARAT_Bytes);
+				//Generating the message by adding the checksum to the message.
+				message[0]=Encryption(index+8);
 
-                break ;
+				// Send the message.
+				USART_TXBufferAsyncZC(USARAT_Bytes);
+
+				break ;
 			}
-            
 		}
 	}
-   else
-  {
-
-  }
+	else
+	{
+		/* It seems that We are not ready for sending a new key as the current key is being sent */
+	}
 }
-
-
-
-
-
-// A runnable the comes every 100 ms to check if any of the buttons is pressed.
-// void switchesCheckRunnable (void) 
-// {
-// 	u8 message = 0;
-// 	u8 switchState = 0;
-// 	static u8 counter = 0;
-
-// 	if (readyForNewKey == 1) 
-//     {
-// 		switch (counter) 
-//         {
-// 		case 0:
-// 		switchState = HSWITCH_u32GetSwitchState(UP_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) {
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-//             // Generating the message by adding the checksum to the message.
-// 			message=Encryption(UP_SWITCH_VALUE);
-			
-// 			   if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} 
-//         else 
-//         {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 1:
-// 		switchState = HSWITCH_u32GetSwitchState(DOWN_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) {
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(DOWN_SWITCH_VALUE);
-			
-// 			if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} else {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 2:
-// 		switchState = HSWITCH_u32GetSwitchState(RIGHT_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) 
-//         {
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(RIGHT_SWITCH_VALUE);
-			
-// 			if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} else {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 3:
-// 		switchState = HSWITCH_u32GetSwitchState(LEFT_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) {
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(LEFT_SWITCH_VALUE);
-			
-// 			if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} else {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 4:
-// 		switchState = HSWITCH_u32GetSwitchState(EDIT_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) {
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(EDIT_SWITCH_VALUE);
-			
-// 			if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} else {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 5:
-// 		switchState = HSWITCH_u32GetSwitchState(MODE_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) {
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(MODE_SWITCH_VALUE);
-			
-// 			if(buttonPressed == 0)
-// 			   {
-// 				// Stop responding for a new press till the current message is sent.
-// 				readyForNewKey = 0;
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} else {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 6:
-// 		switchState = HSWITCH_u32GetSwitchState(OK_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) {
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(OK_SWITCH_VALUE);
-			
-// 			if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} else {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 7:
-// 		switchState = HSWITCH_u32GetSwitchState(STOP_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) {
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(STOP_SWITCH_VALUE);
-			
-// 			if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} else {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 8:
-// 		switchState = HSWITCH_u32GetSwitchState(RESET_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) {
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(RESET_SWITCH_VALUE);
-			
-// 			if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		} else {
-// 			/* Do Nothing */
-// 		}
-// 		counter++;
-// 		break;
-// 		case 9:
-// 		switchState = HSWITCH_u32GetSwitchState(START_SWITCH);
-// 		if (switchState == SWITCH_STATUS_PRESSED) 
-//         {
-
-// 			// Stop responding for a new press till the current message is sent.
-// 			readyForNewKey = 0;
-			
-// 			// Generating the message by adding the checksum to the message.
-//             message=Encryption(START_SWITCH_VALUE);
-			
-// 			  if(buttonPressed == 0)
-// 			   {
-// 			    // Send the message.
-// 			    MUSART_enuSendBufferAsync(USART_1,&message,1,messageSent);
-// 			   }
-// 		}
-//          else 
-//         {
-// 			/* Do Nothing */
-// 		}
-// 		counter = 0;
-// 		break;
-// 	} 
-//     }
-//     else 
-//     {
-// 		/* Do nothing as we are not ready for a new pressed key */	
-// 	}
-// }

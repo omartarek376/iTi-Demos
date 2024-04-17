@@ -1,3 +1,14 @@
+/******************************************************************************
+ *
+ * Module: USART Driver.
+ *
+ * File Name: MUSART_interface.h
+ *
+ * Description: Driver's APIs' prototypes and typedefs' declaration.
+ *
+ * Authors: Momen Hamed.
+ *
+ *******************************************************************************/
 #ifndef USART_DRIVER_
 #define USART_DRIVER_
 

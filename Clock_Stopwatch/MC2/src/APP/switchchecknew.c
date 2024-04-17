@@ -8,7 +8,7 @@
 #define RIGHT_BUTTON    	0x0B
 #define OK_BUTTON 			0x0C
 #define MODE_BUTTON 		0x0D
-#define EDIT_BUTTON 		0x0E 
+#define EDIT_BUTTON 		0x0E
 
 u8 static readyForNewKey = 1;
 u8 message[1] = {0};
@@ -26,6 +26,8 @@ void messageSent (void)
 {
 	readyForNewKey = 1;
 }
+
+USART_Req_t USARAT_Bytes = {.length = 1, .buffer = message, .USART_Peri = USART_Peri_1, .CB = messageSent};
 
 void switchesCheckRunnable (void) 
 {   
@@ -46,8 +48,8 @@ void switchesCheckRunnable (void)
                 message[0]=Encryption(index+8);
 			
 			    // Send the message.
-			   MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);
-			   //USART_TXBufferAsyncZC(USARAT_Bytes);
+			   //MUSART_enuSendBufferAsync(USART_1,message,1,messageSent);
+			   USART_TXBufferAsyncZC(USARAT_Bytes);
 
                 break ;
 			}

@@ -151,11 +151,15 @@ void receiveCallback (void)
 	buttonHandled = FALSE ;
 }
 
+USART_Req_t received_Bytes = {.length = 1, .buffer = recivedMessage, .USART_Peri = USART_Peri_1, .CB = receiveCallback};
+
+
 void recieveRunnable(void)
 {
 	if( buttonHandled == TRUE)
 	{
-		MUSART_enuRecieveBufferAsync(USART_1,recivedMessage,1,receiveCallback);
+		//MUSART_enuRecieveBufferAsync(USART_1,recivedMessage,1,receiveCallback);
+		USART_RXBufferAsyncZC(received_Bytes);
 	}
 	else
 	{

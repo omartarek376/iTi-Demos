@@ -201,7 +201,7 @@ uint8_t DecodeFrame(uint8_t frame);
  * It resets the Date_Counter and updates the Command_Guard variable to indicate that the command is done.
  */
 void LCD_CleanDone(void);
-
+100
 /**
  * Callback function called when the edit mode is activated on the clock.
  * It updates the Command_Guard variable to indicate that the command is in progress.

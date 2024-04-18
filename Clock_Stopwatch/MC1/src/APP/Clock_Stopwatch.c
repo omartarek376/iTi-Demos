@@ -98,6 +98,7 @@ void Stopwatch_RunnerTask(void)
         currentstopwatchTime.hours = 0;
         if (Mode == STOPWATCH_MODE && Command_Guard == COMMAND_DONE)
         {
+            Command_Guard = COMMAND_IN_PROGRESS;
             LCD_enuWriteStringAsync(StopWatchTimeStr, lcd_StopWatchTimeStringdone);
         }
         break;
@@ -106,6 +107,7 @@ void Stopwatch_RunnerTask(void)
         incrementTime(&currentstopwatchTime);
         if (Mode == STOPWATCH_MODE && Command_Guard == COMMAND_DONE)
         {
+            Command_Guard = COMMAND_IN_PROGRESS;
             LCD_enuWriteStringAsync(StopWatchTimeStr, lcd_StopWatchTimeStringdone);
         }
         break;
@@ -113,6 +115,7 @@ void Stopwatch_RunnerTask(void)
     case STOPWATCH_STOPPED:
         if (Mode == STOPWATCH_MODE && Command_Guard == COMMAND_DONE)
         {
+            Command_Guard = COMMAND_IN_PROGRESS;
             LCD_enuWriteStringAsync(StopWatchTimeStr, lcd_StopWatchTimeStringdone);
         }
         break;
@@ -135,7 +138,10 @@ void Switch_runnable(void)
         break;
 
     case EDIT_BUTTON:
-        Edit_Mode_Status = !Edit_Mode_Status;
+        if (Mode == CLOCK_MODE)
+        {
+            Edit_Mode_Status = !Edit_Mode_Status;
+        }
         if (Edit_Mode_Status == EDIT_MODE_ON)
         {
             if (Mode == CLOCK_MODE)
@@ -144,10 +150,11 @@ void Switch_runnable(void)
                 LCD_enuSendCommandAsync(LCD_DisplayON_CursorOFF_BlinkON, Lcd_EditDone);
             }
         }
-        else
+        else if (Edit_Mode_Status == EDIT_MODE_OFF)
         {
             if (Mode == CLOCK_MODE)
             {
+                Command_Guard = COMMAND_IN_PROGRESS;
                 LCD_enuSendCommandAsync(LCD_DisplayON_CursorOFF_BlinkOFF, Lcd_EditOFFDone);
                 OK_Mode_Status = OK_MODE_OFF;
             }
@@ -165,6 +172,7 @@ void Switch_runnable(void)
             if (Edit_Mode_Status == EDIT_MODE_ON && OK_Mode_Status == OK_MODE_OFF)
             {
                 Edit_Cursor.Y = !Edit_Cursor.Y;
+                Command_Guard = COMMAND_IN_PROGRESS;
                 LCD_enuSetCursorAsync(Edit_Cursor.Y, Edit_Cursor.X, Lcd_EditCursorDone);
             }
             if (Edit_Mode_Status == EDIT_MODE_ON && OK_Mode_Status == OK_MODE_ON)
@@ -180,6 +188,7 @@ void Switch_runnable(void)
                         {
                             currentDateTime.hours = 0;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_CLOCK_Y, CLOCK_CURSOR_START_X, Lcd_EditCursorRefreshDoneTime);
                         break;
 
@@ -189,6 +198,7 @@ void Switch_runnable(void)
                         {
                             currentDateTime.minutes = 0;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_CLOCK_Y, CLOCK_CURSOR_START_X, Lcd_EditCursorRefreshDoneTime);
                         break;
 
@@ -198,6 +208,7 @@ void Switch_runnable(void)
                         {
                             currentDateTime.seconds = 0;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_CLOCK_Y, CLOCK_CURSOR_START_X, Lcd_EditCursorRefreshDoneTime);
                         break;
                     }
@@ -211,6 +222,7 @@ void Switch_runnable(void)
                         {
                             currentDateTime.day = 1;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
@@ -220,26 +232,31 @@ void Switch_runnable(void)
                         {
                             currentDateTime.month = 1;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
                     case YEAR_EDIT_POSITION:
                         currentDateTime.year++;
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
                     case DECADE_EDIT_POSITION:
                         currentDateTime.year += 10;
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
                     case CENTURY_EDIT_POSITION:
                         currentDateTime.year += 100;
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
                     case MILLENIUM_EDIT_POSITION:
                         currentDateTime.year += 1000;
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
                     }
@@ -261,6 +278,7 @@ void Switch_runnable(void)
             if (Edit_Mode_Status == EDIT_MODE_ON && OK_Mode_Status == OK_MODE_OFF)
             {
                 Edit_Cursor.Y = !Edit_Cursor.Y;
+                Command_Guard = COMMAND_IN_PROGRESS;
                 LCD_enuSetCursorAsync(Edit_Cursor.Y, Edit_Cursor.X, Lcd_EditCursorDone);
             }
             if (Edit_Mode_Status == EDIT_MODE_ON && OK_Mode_Status == OK_MODE_ON)
@@ -276,6 +294,7 @@ void Switch_runnable(void)
                         {
                             currentDateTime.hours = 23;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_CLOCK_Y, CLOCK_CURSOR_START_X, Lcd_EditCursorRefreshDoneTime);
                         break;
 
@@ -285,6 +304,7 @@ void Switch_runnable(void)
                         {
                             currentDateTime.minutes = 59;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_CLOCK_Y, CLOCK_CURSOR_START_X, Lcd_EditCursorRefreshDoneTime);
                         break;
 
@@ -294,6 +314,7 @@ void Switch_runnable(void)
                         {
                             currentDateTime.seconds = 59;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_CLOCK_Y, CLOCK_CURSOR_START_X, Lcd_EditCursorRefreshDoneTime);
                         break;
                     }
@@ -307,6 +328,7 @@ void Switch_runnable(void)
                         {
                             currentDateTime.day = daysInMonth(currentDateTime.month, currentDateTime.year);
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
@@ -316,26 +338,31 @@ void Switch_runnable(void)
                         {
                             currentDateTime.month = 12;
                         }
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
                     case YEAR_EDIT_POSITION:
                         currentDateTime.year--;
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
                     case DECADE_EDIT_POSITION:
                         currentDateTime.year -= 10;
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
                     case CENTURY_EDIT_POSITION:
                         currentDateTime.year -= 100;
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
 
                     case MILLENIUM_EDIT_POSITION:
                         currentDateTime.year -= 1000;
+                        Command_Guard = COMMAND_IN_PROGRESS;
                         LCD_enuSetCursorAsync(CURSOR_AT_DATE_Y, DATE_CURSOR_START_X, Lcd_EditCursorRefreshDoneDate);
                         break;
                     }
@@ -351,7 +378,7 @@ void Switch_runnable(void)
         {
             Stopwatch_State = STOPWATCH_RESET;
         }
-        else
+        else if (Mode == CLOCK_MODE && Edit_Mode_Status == EDIT_MODE_ON)
         {
             Edit_Cursor.X--;
             if (Edit_Cursor.Y == CURSOR_AT_CLOCK_Y && Edit_Cursor.X < CLOCK_CURSOR_START_X)
@@ -362,33 +389,44 @@ void Switch_runnable(void)
             {
                 Edit_Cursor.X = DATE_CURSOR_END_X;
             }
+            Command_Guard = COMMAND_IN_PROGRESS;
             LCD_enuSetCursorAsync(Edit_Cursor.Y, Edit_Cursor.X, Lcd_EditCursorDone);
         }
         Button_Received = NO_BUTTON_PRESSED;
         break;
 
     case RIGHT_BUTTON:
-        Edit_Cursor.X++;
-        if (Edit_Cursor.Y == CURSOR_AT_CLOCK_Y && Edit_Cursor.X > CLOCK_CURSOR_END_X)
+        if (Mode == CLOCK_MODE && Edit_Mode_Status == EDIT_MODE_ON)
         {
-            Edit_Cursor.X = CLOCK_CURSOR_START_X;
+            Edit_Cursor.X++;
+            if (Edit_Cursor.Y == CURSOR_AT_CLOCK_Y && Edit_Cursor.X > CLOCK_CURSOR_END_X)
+            {
+                Edit_Cursor.X = CLOCK_CURSOR_START_X;
+            }
+            else if (Edit_Cursor.Y == CURSOR_AT_DATE_Y && Edit_Cursor.X > DATE_CURSOR_END_X)
+            {
+                Edit_Cursor.X = DATE_CURSOR_START_X;
+            }
+            Command_Guard = COMMAND_IN_PROGRESS;
+            LCD_enuSetCursorAsync(Edit_Cursor.Y, Edit_Cursor.X, Lcd_EditCursorDone);
+            Button_Received = NO_BUTTON_PRESSED;
         }
-        else if (Edit_Cursor.Y == CURSOR_AT_DATE_Y && Edit_Cursor.X > DATE_CURSOR_END_X)
-        {
-            Edit_Cursor.X = DATE_CURSOR_START_X;
-        }
-        LCD_enuSetCursorAsync(Edit_Cursor.Y, Edit_Cursor.X, Lcd_EditCursorDone);
-        Button_Received = NO_BUTTON_PRESSED;
         break;
 
     case OK_BUTTON:
-        OK_Mode_Status = !OK_Mode_Status;
+        if (Mode == CLOCK_MODE && Edit_Mode_Status == EDIT_MODE_ON)
+        {
+            OK_Mode_Status = !OK_Mode_Status;
+            Command_Guard = COMMAND_IN_PROGRESS;
+        }
         if (OK_Mode_Status == OK_MODE_ON && Edit_Mode_Status == EDIT_MODE_ON && Mode == CLOCK_MODE)
         {
+            Command_Guard = COMMAND_IN_PROGRESS;
             LCD_enuSendCommandAsync(LCD_DisplayON_CursorON_BlinkOFF, Lcd_OKDone);
         }
         else if (OK_Mode_Status == OK_MODE_OFF && Edit_Mode_Status == EDIT_MODE_ON && Mode == CLOCK_MODE)
         {
+            Command_Guard = COMMAND_IN_PROGRESS;
             LCD_enuSendCommandAsync(LCD_DisplayON_CursorOFF_BlinkON, Lcd_OKDone);
         }
         Button_Received = NO_BUTTON_PRESSED;
@@ -653,5 +691,6 @@ void Lcd_EditCursorRefreshDoneDate(void)
 
 void lcd_TimeStringEditdone(void)
 {
+    Command_Guard = COMMAND_IN_PROGRESS;
     LCD_enuSetCursorAsync(Edit_Cursor.Y, Edit_Cursor.X, Lcd_EditCursorDone);
 }
